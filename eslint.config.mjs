@@ -35,6 +35,7 @@ export default [{
         indent: ['warn', 4],
         'simple-import-sort/imports': 'error',
         'simple-import-sort/exports': 'error',
-        '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
+        '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+        '@typescript-eslint/no-require-imports': 'off',
     },
 }];
