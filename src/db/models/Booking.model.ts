@@ -1,7 +1,8 @@
-import { CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
+import { Association, CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
 
 import { BookingStatus } from '../../utils/enums/BookingStatus';
 import DateTimeSlot from './DateTimeSlot.model';
+import IdempotencyKey from './IdempotencyKey.model';
 import sequelize from './sequelize';
 
 class Booking extends Model<InferAttributes<Booking>, InferCreationAttributes<Booking>> {
@@ -13,6 +14,11 @@ class Booking extends Model<InferAttributes<Booking>, InferCreationAttributes<Bo
     declare createdAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
+
+    declare static associations: {
+        dateTimeSlot: Association<Booking, DateTimeSlot>;
+        idempotencyKey: Association<Booking, IdempotencyKey>;
+    };
 }
 
 Booking.init({
@@ -84,7 +90,7 @@ Booking.init({
             fields: ['submission_id'],
             name: 'idx_bookings_submission_id',
         },
-        
+
         {
             fields: ['status'],
             name: 'idx_bookings_status',

@@ -1,5 +1,7 @@
-import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
+import { Association, CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
 
+import BookingTimeSlot from './BookingTimeSlot.model';
+import DateTimeSlot from './DateTimeSlot.model';
 import sequelize from './sequelize';
 
 class BookingDate extends Model<InferAttributes<BookingDate>, InferCreationAttributes<BookingDate>> {
@@ -9,6 +11,11 @@ class BookingDate extends Model<InferAttributes<BookingDate>, InferCreationAttri
     declare createdAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
+
+    declare static associations: {
+        dateTimeSlots: Association<BookingDate, DateTimeSlot>;
+        timeSlots: Association<BookingDate, BookingTimeSlot>;
+    };
 }
 
 BookingDate.init({
@@ -56,7 +63,7 @@ BookingDate.init({
             fields: ['booking_date'],
             name: 'uq_booking_dates_booking_date',
         },
-        
+
         {
             fields: ['is_active'],
             name: 'idx_booking_dates_is_active',

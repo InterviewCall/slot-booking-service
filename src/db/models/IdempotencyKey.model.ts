@@ -1,4 +1,4 @@
-import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
+import { Association, CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
 
 import Booking from './Booking.model';
 import sequelize from './sequelize';
@@ -11,6 +11,10 @@ class IdempotencyKey extends Model<InferAttributes<IdempotencyKey>, InferCreatio
     declare createdAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
+
+    declare static associations: {
+        booking: Association<IdempotencyKey, Booking>;
+    };
 }
 
 IdempotencyKey.init({
@@ -69,7 +73,7 @@ IdempotencyKey.init({
             fields: ['idem_key'],
             name: 'uq_idempotency_keys_idem_key',
         },
-        
+
         {
             fields: ['booking_id'],
             name: 'idx_idempotency_keys_booking_id',

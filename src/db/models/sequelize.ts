@@ -8,6 +8,7 @@ const sequelize = new Sequelize({
     username: dbConfig.DB_USER,
     password: dbConfig.DB_PASSWORD,
     database: dbConfig.DB_NAME,
+    timezone: '+05:30',
     logging: serverConfig.NODE_ENV == 'development' ? console.log : false
 });
 

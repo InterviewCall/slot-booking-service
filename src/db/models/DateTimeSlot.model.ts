@@ -87,7 +87,7 @@ DateTimeSlot.init({
             fields: ['booking_date_id', 'status', 'slot_start_at'],
             name: 'idx_date_time_slots_date_status_start',
         },
-        
+
         {
             fields: ['status', 'slot_start_at'],
             name: 'idx_date_time_slots_status_start',
