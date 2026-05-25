@@ -44,6 +44,11 @@ class DateTimeSlotService {
             throw new InternalServerError('Something went wong, try again');
         }
     }
+
+    async getSlotDetails(slotId: number) {
+        const details = await this.dateTimeSlotRepository.getSlotDetails(slotId);
+        return details;
+    }
 }
 
 export default DateTimeSlotService;

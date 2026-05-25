@@ -1,6 +1,7 @@
-import { CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
+import { Association, CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute } from 'sequelize';
 
 import { TimeSlotStatus } from '../../utils/enums/TimeSlotStatus';
+import Booking from './Booking.model';
 import BookingDate from './BookingDate.model';
 import BookingTimeSlot from './BookingTimeSlot.model';
 import sequelize from './sequelize';
@@ -14,6 +15,16 @@ class DateTimeSlot extends Model<InferAttributes<DateTimeSlot>, InferCreationAtt
     declare createdAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
+
+    declare bookingDate?: NonAttribute<BookingDate>;
+    declare timeSlot?: NonAttribute<BookingTimeSlot>;
+    declare bookings?: NonAttribute<Booking[]>;
+
+    declare static associations: {
+        bookingDate: Association<DateTimeSlot, BookingDate>;
+        timeSlot: Association<DateTimeSlot, BookingTimeSlot>;
+        bookings: Association<DateTimeSlot, Booking>;
+    };
 }
 
 DateTimeSlot.init({

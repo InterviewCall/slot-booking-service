@@ -56,7 +56,7 @@ export function getRedisClient(): Redis {
 
 export const redlock = new Redlock([getRedisClient()], {
     driftFactor: 0.01,
-    retryCount: 10,
+    retryCount: 1,
     retryDelay: 200,
     retryJitter: 200
 });

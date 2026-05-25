@@ -2,6 +2,7 @@ import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 import { getCorrelationId } from '../utils/helpers/request.helper';
+import { serverConfig } from './server.config';
 
 const logger = winston.createLogger({
     format: winston.format.combine(
@@ -19,7 +20,7 @@ const logger = winston.createLogger({
         })
     ),
     transports: [
-        new winston.transports.Console(),
+        ...(serverConfig.NODE_ENV == 'development' ? [new winston.transports.Console()] : []),
         new DailyRotateFile({
             filename: 'logs/%DATE%-app.log',
             datePattern: 'DD-MM-YYYY',

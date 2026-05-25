@@ -27,6 +27,19 @@ async function getAllAvailabilitySlotsHandler(req: Request, res: Response, next:
     }
 }
 
+async function getSlotDetailsHandler(req: Request, res: Response, next: NextFunction) {
+    try {
+        const slotId = req.params.slotId;
+        const response = await dateTimeSlotService.getSlotDetails(Number(slotId));
+        res.status(StatusCodes.OK).json({
+            data: response
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export default {
-    getAllAvailabilitySlotsHandler
+    getAllAvailabilitySlotsHandler,
+    getSlotDetailsHandler
 };

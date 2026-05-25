@@ -12,4 +12,9 @@ dateTimeSlotRouter.get(
     dateTimeSlotController.getAllAvailabilitySlotsHandler
 );
 
+dateTimeSlotRouter.get(
+    '/:slotId',
+    dateTimeSlotController.getSlotDetailsHandler
+);
+
 export default dateTimeSlotRouter;

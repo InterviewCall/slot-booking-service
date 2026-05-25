@@ -87,3 +87,15 @@ export class NotImplementedError implements AppError {
         this.name = 'NotImplementedError';
     }
 }
+
+export class GoneError implements AppError {
+    statusCode: number;
+    message: string;
+    name: string;
+
+    constructor(message: string) {
+        this.statusCode = StatusCodes.GONE;
+        this.message = message;
+        this.name = 'GoneError';
+    }
+}
