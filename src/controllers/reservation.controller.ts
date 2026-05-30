@@ -35,7 +35,19 @@ async function cancelReservationHandler(req: Request, res: Response, next: NextF
     }
 }
 
+async function releaseExpiredSlotReservationsHandler(_req: Request, res: Response, next: NextFunction) {
+    try {
+        const response = await reservationService.releaseExpiredSlotReservations();
+        res.status(StatusCodes.OK).json(
+            { data: response }
+        );
+    } catch (error) {
+        next(error);
+    }
+}
+
 export default {
     getReservationDetailsHandler,
-    cancelReservationHandler
+    cancelReservationHandler,
+    releaseExpiredSlotReservationsHandler
 };

@@ -1,4 +1,4 @@
-import { CreationAttributes, Transaction } from 'sequelize';
+import { CreationAttributes, Op, Transaction } from 'sequelize';
 
 import Booking from '../db/models/Booking.model';
 import { BookingStatus } from '../utils/enums/BookingStatus';
@@ -32,6 +32,21 @@ class BookingRepository extends BaseRepository<Booking> {
         const updatedBooking: Booking = await booking.save({ transaction });
 
         return updatedBooking;
+    }
+
+    async cancelBookings(bookingIds: number[], transaction: Transaction) {
+        const [affectedCount] = await this.model.update({
+            status: BookingStatus.CANCELLED
+        }, {
+            where: {
+                id: {
+                    [Op.in]: bookingIds
+                }
+            },
+            transaction
+        });
+
+        return affectedCount;
     }
 
     async findCandidateIdWithStatus(bookingId: number) {

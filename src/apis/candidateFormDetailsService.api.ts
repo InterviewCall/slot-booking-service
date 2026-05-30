@@ -1,4 +1,3 @@
-
 import { candidateFormDetailsApi } from '../configs/axios.config';
 import { CandidateDetailsResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
 

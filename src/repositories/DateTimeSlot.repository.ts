@@ -25,7 +25,7 @@ class DateTimeSlotRepository extends BaseRepository<DateTimeSlot> {
                     [Op.gt]: bookingCutoffTime
                 }
             },
-            attributes: ['id', 'slotStartAt', 'status'],
+            attributes: ['id'],
             include: [
                 {
                     model: BookingTimeSlot,
@@ -61,7 +61,7 @@ class DateTimeSlotRepository extends BaseRepository<DateTimeSlot> {
         await slot.save({ transaction });
     }
 
-    async getSlotDetails(id: number) {
+    async getSlotDetails(id: number): Promise<DateTimeSlot | null> {
         const slotDetails = await this.model.findByPk(id, {
             attributes: ['id', 'status'],
             include: [
@@ -86,6 +86,22 @@ class DateTimeSlotRepository extends BaseRepository<DateTimeSlot> {
         });
 
         return slotDetails;
+    }
+
+    async availableSlots(slotIds: number[], transaction: Transaction): Promise<number> {
+        const [affectedCount] = await this.model.update({
+            status: TimeSlotStatus.AVAILABLE
+        }, {
+            where: {
+                id: {
+                    [Op.in]: slotIds
+                },
+                status: TimeSlotStatus.RESERVED
+            },
+            transaction
+        });
+
+        return affectedCount;
     }
 }
 

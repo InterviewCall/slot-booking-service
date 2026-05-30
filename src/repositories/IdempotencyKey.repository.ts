@@ -1,6 +1,8 @@
-import { CreationAttributes, Transaction } from 'sequelize';
+import { CreationAttributes, Op, Transaction } from 'sequelize';
 
+import Booking from '../db/models/Booking.model';
 import IdempotencyKey from '../db/models/IdempotencyKey.model';
+import { BookingStatus } from '../utils/enums/BookingStatus';
 import BaseRepository from './Base.repository';
 
 class IdempotencyKeyRepository extends BaseRepository<IdempotencyKey> {
@@ -12,12 +14,12 @@ class IdempotencyKeyRepository extends BaseRepository<IdempotencyKey> {
         return await this.model.create(data, { transaction });
     }
 
-    async findOneWithAttributes(idemKey: string) {
+    async findOneWithAttributes(idemKey: string): Promise<IdempotencyKey | null> {
         const idempotencyKey = await this.model.findOne({
             where: {
                 idemKey
             },
-            attributes: ['bookingId', 'finalized', 'createdAt']
+            attributes: ['bookingId', 'finalized', 'createdAt', 'expiresAt']
         });
 
         return idempotencyKey;
@@ -43,6 +45,32 @@ class IdempotencyKeyRepository extends BaseRepository<IdempotencyKey> {
     async softDelete(idempotencyKey: IdempotencyKey, transaction: Transaction) {
         idempotencyKey.deletedAt = new Date();
         await idempotencyKey.save({ transaction });
+    }
+
+    async findAllSlotsIdsWhereReservationExpires(expiringTimestamp: Date, transaction: Transaction): Promise<IdempotencyKey[]> {
+        const reservation = await this.model.findAll({
+            where: {
+                finalized: false,
+                createdAt: {
+                    [Op.lt]: expiringTimestamp
+                },
+            },
+            attributes: ['idemKey'],
+            include: [{
+                model: Booking,
+                as: 'booking',
+                where: {
+                    status: BookingStatus.INITIATED
+                },
+                attributes: ['id', 'dateTimeSlotId'],
+                required: true
+            }],
+            order: [['createdAt', 'ASC']],
+            limit: 100,
+            transaction
+        });
+
+        return reservation;
     }
 }
 

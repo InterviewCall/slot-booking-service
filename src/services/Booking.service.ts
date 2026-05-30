@@ -20,6 +20,7 @@ import { AppError, BadRequestError, ConflictError, InternalServerError, NotFound
 import { createErrorExecutor } from '../utils/helpers/errorExecutorFactory';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID, generateIdempotencyKey } from '../utils/helpers/idempotencyKey.helper';
+import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
 
 class BookingService {
     private readonly bookingRepositoty: BookingRepository;
@@ -148,12 +149,12 @@ class BookingService {
                 throw new BadRequestError('This reservation is already confirmed');
             }
 
-            const expireTime = getReservationExpiredTime(idempotencyKey.createdAt);
+            const expireTimeStamp = getOneReservationExpireTimeStamp(idempotencyKey.createdAt);
 
-            const isExpired: boolean = new Date(expireTime).getTime() <= Date.now();
+            const isExpired: boolean = expireTimeStamp <= Date.now();
 
             if(isExpired) {
-                throw new BadRequestError('This reservation has expired. Please select another slot.');
+                throw new BadRequestError('This reservation has expired please select another slot');
             }
 
             const booking: Booking = await this.bookingRepositoty.confirmBooking(

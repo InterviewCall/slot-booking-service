@@ -16,7 +16,7 @@ class DateTimeSlotService {
         this.bookingDateRepository = bookingDateRepository;
     }
 
-    async getAllAvailableSlotsForGivenDate(payload: GetAvailableSlotsDto) {
+    async getAllAvailableSlotsForGivenDate(payload: GetAvailableSlotsDto): Promise<DateTimeSlot[]> {
         try {
             const bookingDate: BookingDate | null = await this.bookingDateRepository.findOne({
                 bookingDate: payload.bookingDate

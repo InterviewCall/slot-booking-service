@@ -54,7 +54,14 @@ export type ReservationStatus =
 export type ReservationReviewResponse = {
     candidateName: string;
     candidateEmail: string;
+    candidatePhone: string;
     slotDetails: string;
-    expiresAt: string;
+    expiresAt: Date;
     reservationStatus: ReservationStatus;
 };
+
+export type UpdateCountResponse = {
+    totalReleasedCount: number,
+    updatedBookingCount: number,
+    updatedDateTimeSlotCount: number
+}

@@ -7,6 +7,8 @@ type ServerConfig = {
     REDIS_HOST: string,
     LOCK_TTL: number
     CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: string
+    SCHEDULER_INTERNAL_API_KEY: string
+    INTERNAL_API_KEY_HEADER: string
 }
 
 type DBConfig = {
@@ -28,8 +30,10 @@ export const serverConfig: ServerConfig =  {
     NODE_ENV: process.env.NODE_ENV,
     REDIS_HOST: process.env.REDIS_Host || 'localhost',
     REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
-    LOCK_TTL: Number(process.env.LOCK_TTL) || 20000,
-    CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: process.env.CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL || 'http://localhost:3000/api/v1'
+    LOCK_TTL: Number(process.env.LOCK_TTL) || 50000,
+    CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: process.env.CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL || 'http://localhost:3000/api/v1',
+    SCHEDULER_INTERNAL_API_KEY: process.env.SCHEDULER_INTERNAL_API_KEY || '',
+    INTERNAL_API_KEY_HEADER: process.env.INTERNAL_API_KEY_HEADER || ''
 };
 
 export const dbConfig: DBConfig = {

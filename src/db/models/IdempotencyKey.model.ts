@@ -1,4 +1,4 @@
-import { Association, CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
+import { Association, CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model, NonAttribute } from 'sequelize';
 
 import Booking from './Booking.model';
 import sequelize from './sequelize';
@@ -9,8 +9,11 @@ class IdempotencyKey extends Model<InferAttributes<IdempotencyKey>, InferCreatio
     declare finalized: CreationOptional<boolean>;
     declare bookingId: number;
     declare createdAt: CreationOptional<Date>;
+    declare expiresAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
+
+    declare booking?: NonAttribute<Booking>;
 
     declare static associations: {
         booking: Association<IdempotencyKey, Booking>;
@@ -52,6 +55,12 @@ IdempotencyKey.init({
         allowNull: false
     },
 
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: () => new Date(Date.now() + 60 * 1000)
+    },
+
     updatedAt: {
         type: DataTypes.DATE,
         allowNull: false
@@ -82,6 +91,11 @@ IdempotencyKey.init({
         {
             fields: ['finalized'],
             name: 'idx_idempotency_keys_finalized',
+        },
+        
+        {
+            fields: ['finalized', 'expires_at'], 
+            name: 'idx_idempotency_keys_finalized_expires_at',
         }
     ]
 });

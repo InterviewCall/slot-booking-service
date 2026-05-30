@@ -9,7 +9,7 @@ import sequelize from '../db/models/sequelize';
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
-import { ApiErrorResponse, ReservationReviewResponse } from '../types/Response.type';
+import { ApiErrorResponse, ReservationReviewResponse, UpdateCountResponse } from '../types/Response.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
 import {
@@ -23,6 +23,7 @@ import { createErrorExecutor } from '../utils/helpers/errorExecutorFactory';
 import { formatBookingDate } from '../utils/helpers/formatBookingDate';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID } from '../utils/helpers/idempotencyKey.helper';
+import { getOneReservationExpireTimeStamp, getReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
 
 class ReservationService {
     private readonly idempotencyKeyRepository: IdempotencyKeyRepository;
@@ -51,10 +52,12 @@ class ReservationService {
                 throw new NotFoundError('No reservation found with the given reservation ID');
             }
 
-            const expirationTime = getReservationExpiredTime(reservationDetails.createdAt);
+            const expireTimeStamp = getOneReservationExpireTimeStamp(reservationDetails.createdAt);
 
-            if(!reservationDetails.finalized && this.isExpired(expirationTime)) {
-                throw new GoneError('This reservation has expired. Please select another slot');
+            const isReservationExpired: boolean = expireTimeStamp <= Date.now();
+
+            if(!reservationDetails.finalized && isReservationExpired) {
+                throw new GoneError('This reservation has expired, please select another slot');
             }
 
             const booking: Booking | null = await this.bookingRepository.findById(reservationDetails.bookingId);
@@ -91,13 +94,15 @@ class ReservationService {
             return {
                 candidateName: candidateDetails.data.fullName,
                 candidateEmail: candidateDetails.data.email,
+                candidatePhone: candidateDetails.data.phone,
                 slotDetails,
-                expiresAt: expirationTime,
+                expiresAt: new Date(expireTimeStamp),
                 reservationStatus: isConfirmed
                     ? 'confirmed'
                     : 'pending_confirmation',
             };
         } catch (error) {
+            console.log(error);
             logger.error('The failing reason of get resrvation details reservation service method', { error });
 
             if (error instanceof BadRequestError || error instanceof NotFoundError || error instanceof GoneError) {
@@ -175,14 +180,71 @@ class ReservationService {
         }
     }
 
-    private isExpired(expirationTime: string | Date): boolean {
-        const expirationTimestamp = new Date(expirationTime).getTime();
-        
-        if(Number.isNaN(expirationTimestamp)) {
-            throw new BadRequestError('Reservation expiry time is invalid');
-        }
+    async releaseExpiredSlotReservations(): Promise<UpdateCountResponse> {
+        const transaction: Transaction = await sequelize.transaction();
+        try {
+            const updatedCount: UpdateCountResponse = {
+                totalReleasedCount: 0,
+                updatedBookingCount: 0,
+                updatedDateTimeSlotCount: 0
+            };
 
-        return expirationTimestamp <= Date.now();
+            const timestamp = getReservationExpireTimeStamp();
+
+            const reservations = await this.idempotencyKeyRepository.findAllSlotsIdsWhereReservationExpires(
+                timestamp,
+                transaction
+            );
+
+            if(reservations.length == 0) {
+                await transaction.commit();
+                return updatedCount;
+            }
+
+            const bookingIds: number[] = [];
+            const slotIds: number[] = [];
+
+            for(const reservation of reservations) {
+                if(!reservation.booking) {
+                    throw new NotFoundError(`Booking association missing for expired reservation id: ${reservation.idemKey}`);
+                }
+
+                bookingIds.push(reservation.booking.id);
+                slotIds.push(reservation.booking.dateTimeSlotId);
+            }
+
+            if(bookingIds.length == 0 || slotIds.length == 0) {
+                await transaction.commit();
+                return updatedCount;
+            }
+
+            updatedCount.updatedBookingCount = await this.bookingRepository.cancelBookings(
+                bookingIds,
+                transaction
+            );
+
+            updatedCount.updatedDateTimeSlotCount = await this.dateTimeSlotRepository.availableSlots(
+                slotIds,
+                transaction
+            );
+
+            updatedCount.totalReleasedCount = updatedCount.updatedBookingCount + updatedCount.updatedDateTimeSlotCount;
+
+            await transaction.commit();
+
+            return updatedCount;
+
+        } catch (error) {
+            await transaction.rollback();
+
+            logger.error('The reason of failing release expired slot reservation method in reservation service', { error });
+
+            if(error instanceof NotFoundError) {
+                throw error;
+            }
+
+            throw new InternalServerError('Something went wrong while relesing slots');
+        }
     }
 }
 
