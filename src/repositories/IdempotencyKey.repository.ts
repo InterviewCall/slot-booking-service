@@ -1,4 +1,4 @@
-import { CreationAttributes, Op, Transaction } from 'sequelize';
+import { CreationAttributes, literal, Op, Transaction } from 'sequelize';
 
 import Booking from '../db/models/Booking.model';
 import IdempotencyKey from '../db/models/IdempotencyKey.model';
@@ -47,12 +47,12 @@ class IdempotencyKeyRepository extends BaseRepository<IdempotencyKey> {
         await idempotencyKey.save({ transaction });
     }
 
-    async findAllSlotsIdsWhereReservationExpires(expiringTimestamp: Date, transaction: Transaction): Promise<IdempotencyKey[]> {
+    async findAllSlotsIdsWhereReservationExpires(transaction: Transaction): Promise<IdempotencyKey[]> {
         const reservation = await this.model.findAll({
             where: {
                 finalized: false,
                 createdAt: {
-                    [Op.lt]: expiringTimestamp
+                    [Op.lte]: literal('DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 60 SECOND)')
                 },
             },
             attributes: ['idemKey'],

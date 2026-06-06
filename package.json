@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/server.ts",
-    "dev": "nodemon src/server.ts",
+    "dev": "nodemon --watch src --ext ts --exec 'tsx src/server.ts'",
     "migration:generate": "sequelize-cli migration:generate --name",
     "seed:generate": "sequelize-cli seed:generate --name",
     "migrate": "sequelize-cli db:migrate",
@@ -30,7 +30,7 @@
     "mysql2": "^3.22.3",
     "redlock": "^5.0.0-beta.2",
     "sequelize": "^6.37.8",
-    "uuid": "^11.1.0",
+    "uuid": "^14.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.25.46"
@@ -48,6 +48,16 @@
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "sequelize": {
+      "uuid": "^14.0.0"
+    }
+  },
+  "allowScripts": {
+    "esbuild@0.28.0": true,
+    "fsevents@2.3.3": true
   }
 }

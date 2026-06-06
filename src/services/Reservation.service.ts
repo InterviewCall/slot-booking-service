@@ -23,7 +23,7 @@ import { createErrorExecutor } from '../utils/helpers/errorExecutorFactory';
 import { formatBookingDate } from '../utils/helpers/formatBookingDate';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID } from '../utils/helpers/idempotencyKey.helper';
-import { getOneReservationExpireTimeStamp, getReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
+import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
 
 class ReservationService {
     private readonly idempotencyKeyRepository: IdempotencyKeyRepository;
@@ -189,12 +189,7 @@ class ReservationService {
                 updatedDateTimeSlotCount: 0
             };
 
-            const timestamp = getReservationExpireTimeStamp();
-
-            const reservations = await this.idempotencyKeyRepository.findAllSlotsIdsWhereReservationExpires(
-                timestamp,
-                transaction
-            );
+            const reservations = await this.idempotencyKeyRepository.findAllSlotsIdsWhereReservationExpires(transaction);
 
             if(reservations.length == 0) {
                 await transaction.commit();
