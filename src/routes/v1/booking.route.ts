@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
 import bookingController from '../../controllers/booking.controller';
-import { validateRequestBody, validateRequestQuery } from '../../validators';
-import { confirmBookingQuerySchema, createBookingBodySchema } from '../../validators/booking.validator';
+import { validateRequestBody, validateRequestParams, validateRequestQuery } from '../../validators';
+import { confirmBookingQuerySchema, createBookingBodySchema, getBookingDetailsSchema } from '../../validators/booking.validator';
 
 const bookingRouter = Router();
 
@@ -16,6 +16,12 @@ bookingRouter.patch(
     '/confirm-booking',
     validateRequestQuery(confirmBookingQuerySchema),
     bookingController.confirmBookingHandler
+);
+
+bookingRouter.get(
+    '/:bookingId',
+    validateRequestParams(getBookingDetailsSchema),
+    bookingController.getBookingDetailsHandler
 );
 
 export default bookingRouter;

@@ -21,6 +21,7 @@
   "dependencies": {
     "@sesamecare-oss/redlock": "^1.4.0",
     "axios": "^1.16.1",
+    "bullmq": "^5.78.0",
     "cors": "^2.8.6",
     "dayjs": "^1.11.20",
     "dotenv": "^16.5.0",
@@ -58,6 +59,7 @@
   },
   "allowScripts": {
     "esbuild@0.28.0": true,
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "msgpackr-extract@3.0.4": true
   }
 }

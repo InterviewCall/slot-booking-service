@@ -68,7 +68,11 @@ class ReservationService {
 
             const slot: DateTimeSlot | null = await this.dateTimeSlotRepository.getSlotDetails(booking.dateTimeSlotId);
 
-            if (!slot?.bookingDate || !slot.timeSlot) {
+            if(!slot) {
+                throw new NotFoundError(`No slot found with this id: ${booking.dateTimeSlotId}`);
+            }
+
+            if (!slot.bookingDate || !slot.timeSlot) {
                 throw new NotFoundError('No slot details found for this reservation');
             }
 
@@ -102,7 +106,6 @@ class ReservationService {
                     : 'pending_confirmation',
             };
         } catch (error) {
-            console.log(error);
             logger.error('The failing reason of get resrvation details reservation service method', { error });
 
             if (error instanceof BadRequestError || error instanceof NotFoundError || error instanceof GoneError) {
@@ -196,7 +199,7 @@ class ReservationService {
                 return updatedCount;
             }
 
-            const bookingIds: number[] = [];
+            const bookingIds: bigint[] = [];
             const slotIds: number[] = [];
 
             for(const reservation of reservations) {

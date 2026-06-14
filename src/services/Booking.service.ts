@@ -2,7 +2,7 @@ import { ExecutionError, Lock } from '@sesamecare-oss/redlock';
 import { isAxiosError } from 'axios';
 import { Transaction } from 'sequelize';
 
-import { fetchFormSubmissionDetails } from '../apis/candidateFormDetailsService.api';
+import { fetchCandidateDetails, fetchFormSubmissionDetails } from '../apis/candidateFormDetailsService.api';
 import logger from '../configs/logger.config';
 import { redlock } from '../configs/redis.config';
 import { serverConfig } from '../configs/server.config';
@@ -11,13 +11,17 @@ import DateTimeSlot from '../db/models/DateTimeSlot.model';
 import IdempotencyKey from '../db/models/IdempotencyKey.model';
 import sequelize from '../db/models/sequelize';
 import { CreateBookingDto } from '../dtos/Booking.dto';
+import { addConfirmationDetailsToQueue } from '../producers/transactionalNottification.producer';
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
-import { ApiErrorResponse, CreateBookingResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
+import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
+import { BookingStatus } from '../utils/enums/BookingStatus';
+import { NotificationChannel } from '../utils/enums/NotificationChannel.enum';
 import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
 import { AppError, BadRequestError, ConflictError, InternalServerError, NotFoundError } from '../utils/errors/app.error';
 import { createErrorExecutor } from '../utils/helpers/errorExecutorFactory';
+import { formatBookingDate } from '../utils/helpers/formatBookingDate';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID, generateIdempotencyKey } from '../utils/helpers/idempotencyKey.helper';
 import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
@@ -129,10 +133,12 @@ class BookingService {
         }
     }
 
-    async confirmBooking(reservationId: string) {
+    async confirmBooking(reservationId: string): Promise<ConfirmBookingResponse> {
         if(!checkIsValidUUID(reservationId)) {
             throw new BadRequestError('Submission Id should be a valid UUID');
         }
+
+        let booking: Booking | null = null;
 
         const transaction: Transaction = await sequelize.transaction();
         try {
@@ -157,7 +163,7 @@ class BookingService {
                 throw new BadRequestError('This reservation has expired please select another slot');
             }
 
-            const booking: Booking = await this.bookingRepositoty.confirmBooking(
+            booking = await this.bookingRepositoty.confirmBooking(
                 idempotencyKey.bookingId,
                 transaction
             );
@@ -173,8 +179,6 @@ class BookingService {
             );
 
             await transaction.commit();
-
-            return booking;
         } catch (error) {
             await transaction.rollback();
 
@@ -185,6 +189,129 @@ class BookingService {
             }
 
             throw new InternalServerError('Something went wrong while confirming booking');
+        }
+
+        const failedReason: string | undefined = await this.enqueueBookingConfirmationNotification(booking);
+
+        return {
+            bookingId: booking.id,
+            failedReason
+        };
+    }
+
+    async getBookingDetails(bookingId: bigint): Promise<BookingDetailsResponse> {
+        try {
+            const booking: Booking | null = await this.bookingRepositoty.getBooking(bookingId);
+
+            if(!booking) {
+                throw new NotFoundError(`No booking found with this id: ${bookingId}`);
+            }
+
+            if(booking.status != BookingStatus.CONFIRMED) {
+                throw new BadRequestError('Booking is not in confirm state, can not find details');
+            }
+
+            const slot: DateTimeSlot | null = await this.dateTimeSlotRepository.getSlotDetails(booking.dateTimeSlotId);
+
+            if(!slot) {
+                throw new NotFoundError(`No time slot found with this slot id: ${booking.dateTimeSlotId}`);
+            }
+
+            if(!slot.bookingDate || !slot.timeSlot) {
+                throw new NotFoundError('Slot detalils could not found');
+            } 
+
+            const candidate: CandidateDetailsResponse = await fetchCandidateDetails(booking.candidateId);
+
+            const slotDetails: string = `${formatBookingDate(slot.bookingDate.bookingDate)}, ${slot.timeSlot.slotLabel}`;
+
+            return {
+                candidateName: candidate.data.fullName,
+                candidateEmail: candidate.data.email,
+                candidatePhone: candidate.data.phone,
+                slotDetails
+            };
+        } catch (error) {
+            logger.error('The failing reason of get booking details in booking service method', { error });
+
+            if (error instanceof NotFoundError || error instanceof BadRequestError) {
+                throw error;
+            }
+
+            if (isAxiosError<ApiErrorResponse>(error)) {
+                const statusCode = error.response?.status;
+                const message = error.response?.data.message;
+                
+                if(statusCode && message) {
+                    const axiosError: AppError | null = createErrorExecutor(statusCode, message);
+                    if(axiosError) {
+                        throw axiosError;
+                    }
+                }
+            }
+
+            throw new InternalServerError('Something went wrong while fetching booking details');
+        }
+    }
+
+    private async enqueueBookingConfirmationNotification(booking: Booking): Promise<string | undefined> {
+        let failedReason: string = '';
+
+        try {
+            const candidateResponse: CandidateDetailsResponse = await fetchCandidateDetails(booking.candidateId);
+
+            const candidate: CandidateData = candidateResponse.data;
+
+            const slotDetails: DateTimeSlot | null = await this.dateTimeSlotRepository.getSlotDetails(booking.dateTimeSlotId);
+
+            if (!slotDetails?.bookingDate || !slotDetails.timeSlot) {
+                failedReason = 'Booking confirmed but not able To send notification due to slot details not found';
+                return failedReason;
+            }
+
+            await addConfirmationDetailsToQueue({
+                bookingId: booking.id,
+                submissionId: booking.submissionId,
+                candidateId: candidate.id,
+                candidateName: candidate.fullName,
+                candidateEmail: candidate.email,
+                candidatePhone: `+91${candidate.phone}`,
+                slotDate: formatBookingDate(slotDetails.bookingDate.bookingDate),
+                slotTime: slotDetails.timeSlot.slotLabel,
+                subject: 'Booking Confirmed',
+                templateKeys: {
+                    EMAIL: 'BookingConfirmation',
+                    WHATSAPP: 'BookingConfirmation'
+                },
+                channels: [
+                    NotificationChannel.EMAIL,
+                    NotificationChannel.WHATSAPP
+                ]
+            }); 
+        } catch (error) {
+            if(isAxiosError<ApiErrorResponse>(error)) {
+                const statusCode: number | undefined = error.response?.status;
+                const message: string | undefined = error.response?.data.message;
+
+                const errorMessage: string = 'Booking Confirmed but not able To send notification due to ' + message;
+
+                if(statusCode && message) {
+                    failedReason = errorMessage;
+                    return failedReason;
+                }
+            }
+
+            if(error instanceof Error) {
+                logger.error('Booking confirmed but failed to enqueue notification job', {
+                    bookingId: booking.id,
+                    candidateId: booking.candidateId,
+                    failedReason,
+                    error,
+                });
+
+                failedReason = 'Booking confirmed but failed to enqueue notification job';
+                return failedReason;
+            }
         }
     }
 }

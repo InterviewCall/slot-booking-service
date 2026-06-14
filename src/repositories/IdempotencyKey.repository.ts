@@ -19,7 +19,7 @@ class IdempotencyKeyRepository extends BaseRepository<IdempotencyKey> {
             where: {
                 idemKey
             },
-            attributes: ['bookingId', 'finalized', 'createdAt', 'expiresAt']
+            attributes: ['bookingId', 'finalized', 'createdAt']
         });
 
         return idempotencyKey;

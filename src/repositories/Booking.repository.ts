@@ -14,7 +14,7 @@ class BookingRepository extends BaseRepository<Booking> {
         return await this.model.create(data, { transaction });
     }
 
-    async confirmBooking(id: number, transaction: Transaction): Promise<Booking> {
+    async confirmBooking(id: bigint, transaction: Transaction): Promise<Booking> {
         const booking: Booking | null = await this.model.findByPk(id, { transaction });
 
         if(!booking) {
@@ -34,7 +34,7 @@ class BookingRepository extends BaseRepository<Booking> {
         return updatedBooking;
     }
 
-    async cancelBookings(bookingIds: number[], transaction: Transaction) {
+    async cancelBookings(bookingIds: bigint[], transaction: Transaction) {
         const [affectedCount] = await this.model.update({
             status: BookingStatus.CANCELLED
         }, {
@@ -49,9 +49,17 @@ class BookingRepository extends BaseRepository<Booking> {
         return affectedCount;
     }
 
-    async findCandidateIdWithStatus(bookingId: number) {
+    async findCandidateIdWithStatus(bookingId: bigint) {
         const booking = await this.model.findByPk(bookingId, {
             attributes: ['status', 'candidateId']
+        });
+
+        return booking;
+    }
+
+    async getBooking(bookingId: bigint): Promise<Booking | null> {
+        const booking = await this.model.findByPk(bookingId, {
+            attributes: ['candidateId', 'submissionId', 'dateTimeSlotId', 'status'],
         });
 
         return booking;

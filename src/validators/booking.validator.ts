@@ -20,3 +20,9 @@ export const confirmBookingQuerySchema = z.object({
 export const createBookingValidationSchema = {
     body: createBookingBodySchema,
 };
+
+export const getBookingDetailsSchema = z.object({
+    bookingId: z.coerce
+        .bigint()
+        .positive('Booking Id must be a positive integer')
+});

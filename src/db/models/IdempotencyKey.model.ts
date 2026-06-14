@@ -7,9 +7,8 @@ class IdempotencyKey extends Model<InferAttributes<IdempotencyKey>, InferCreatio
     declare id: CreationOptional<number>;
     declare idemKey: string;
     declare finalized: CreationOptional<boolean>;
-    declare bookingId: number;
+    declare bookingId: bigint;
     declare createdAt: CreationOptional<Date>;
-    declare expiresAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
 
@@ -53,12 +52,6 @@ IdempotencyKey.init({
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false
-    },
-
-    expiresAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: () => new Date(Date.now() + 60 * 1000)
     },
 
     updatedAt: {

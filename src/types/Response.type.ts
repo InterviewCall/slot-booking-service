@@ -65,3 +65,15 @@ export type UpdateCountResponse = {
     updatedBookingCount: number,
     updatedDateTimeSlotCount: number
 }
+
+export type ConfirmBookingResponse = {
+    bookingId: bigint
+    failedReason?: string
+}
+
+export type BookingDetailsResponse = {
+    candidateName: string
+    candidateEmail: string
+    candidatePhone: string
+    slotDetails: string
+}

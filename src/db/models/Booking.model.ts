@@ -6,7 +6,7 @@ import IdempotencyKey from './IdempotencyKey.model';
 import sequelize from './sequelize';
 
 class Booking extends Model<InferAttributes<Booking>, InferCreationAttributes<Booking>> {
-    declare id: CreationOptional<number>;
+    declare id: CreationOptional<bigint>;
     declare dateTimeSlotId: ForeignKey<DateTimeSlot['id']>;
     declare candidateId: number;
     declare submissionId: string;
@@ -33,7 +33,7 @@ Booking.init({
         allowNull: false,
         references: {
             model: DateTimeSlot,
-            key: 'id'
+            key: 'id',
         },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
