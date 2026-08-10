@@ -66,9 +66,13 @@ export type UpdateCountResponse = {
     updatedDateTimeSlotCount: number
 }
 
+export type EnqueuedResponse = {
+    failedReason?: string
+} | undefined
+
 export type ConfirmBookingResponse = {
     bookingId: bigint
-    failedReason?: string
+    enqueuedResponse: EnqueuedResponse
 }
 
 export type BookingDetailsResponse = {

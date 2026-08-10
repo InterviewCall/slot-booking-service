@@ -1,7 +1,6 @@
-import { Redlock } from '@sesamecare-oss/redlock';
 import Redis from 'ioredis';
+import { createLock,IoredisAdapter } from 'redlock-universal';
 
-// import Redlock, { CompatibleRedisClient } from 'redlock';
 import { InternalServerError } from '../utils/errors/app.error';
 import logger from './logger.config';
 import { serverConfig } from './server.config';
@@ -54,9 +53,14 @@ export function getRedisClient(): Redis {
     }
 }
 
-export const redlock = new Redlock([getRedisClient()], {
-    driftFactor: 0.01,
-    retryCount: 1,
-    retryDelay: 200,
-    retryJitter: 200
-});
+const redisAdapter = new IoredisAdapter(getRedisClient());
+
+export function createDistributedLock(key: string, ttl: number) {
+    return createLock({
+        adapter: redisAdapter,
+        key,
+        ttl,
+        retryAttempts: 1,
+        retryDelay: 200
+    });
+}

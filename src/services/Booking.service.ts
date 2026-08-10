@@ -1,10 +1,10 @@
-import { ExecutionError, Lock } from '@sesamecare-oss/redlock';
 import { isAxiosError } from 'axios';
+import { Lock, LockAcquisitionError, LockHandle } from 'redlock-universal';
 import { Transaction } from 'sequelize';
 
 import { fetchCandidateDetails, fetchFormSubmissionDetails } from '../apis/candidateFormDetailsService.api';
 import logger from '../configs/logger.config';
-import { redlock } from '../configs/redis.config';
+import { createDistributedLock } from '../configs/redis.config';
 import { serverConfig } from '../configs/server.config';
 import Booking from '../db/models/Booking.model';
 import DateTimeSlot from '../db/models/DateTimeSlot.model';
@@ -15,7 +15,7 @@ import { addConfirmationDetailsToQueue } from '../producers/transactionalNottifi
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
-import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
+import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, EnqueuedResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import { NotificationChannel } from '../utils/enums/NotificationChannel.enum';
 import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
@@ -49,10 +49,12 @@ class BookingService {
         const bookingResource: string = `dateTimeSlot:${bookingPayload.dateTimeSlotId}`;
         const ttl: number = serverConfig.LOCK_TTL;
 
+        const lock: Lock = createDistributedLock(bookingResource, ttl);
+        let lockHandle: LockHandle | undefined = undefined;
+
         const transaction: Transaction = await sequelize.transaction();
-        let lock: Lock | undefined = undefined;
         try {
-            lock = await redlock.acquire([bookingResource], ttl);
+            lockHandle = await lock.acquire();
 
             const slot: DateTimeSlot | null = await this.dateTimeSlotRepository.findById(
                 bookingPayload.dateTimeSlotId,
@@ -102,13 +104,13 @@ class BookingService {
 
             logger.error('The failing reason of create booking service method', { error });
 
-            if(error instanceof ExecutionError) {
+            if(error instanceof LockAcquisitionError) {
                 throw new ConflictError('This slot is currently being reserved. Please try another slot');
             }
 
             if(isAxiosError<ApiErrorResponse>(error)) {
-                if(lock) {
-                    await lock.release();
+                if(lockHandle) {
+                    await lock.release(lockHandle);
                 }
 
                 const statusCode = error.response?.status;
@@ -123,8 +125,8 @@ class BookingService {
             }
 
             if(error instanceof NotFoundError || error instanceof BadRequestError) {
-                if(lock) {
-                    await lock.release();
+                if(lockHandle) {
+                    await lock.release(lockHandle);
                 }
                 throw error;
             }
@@ -191,11 +193,11 @@ class BookingService {
             throw new InternalServerError('Something went wrong while confirming booking');
         }
 
-        const failedReason: string | undefined = await this.enqueueBookingConfirmationNotification(booking);
+        const enqueuedResponse = await this.enqueueBookingConfirmationNotification(booking);
 
         return {
             bookingId: booking.id,
-            failedReason
+            enqueuedResponse
         };
     }
 
@@ -254,7 +256,7 @@ class BookingService {
         }
     }
 
-    private async enqueueBookingConfirmationNotification(booking: Booking): Promise<string | undefined> {
+    private async enqueueBookingConfirmationNotification(booking: Booking): Promise<EnqueuedResponse> {
         let failedReason: string = '';
 
         try {
@@ -266,7 +268,7 @@ class BookingService {
 
             if (!slotDetails?.bookingDate || !slotDetails.timeSlot) {
                 failedReason = 'Booking confirmed but not able To send notification due to slot details not found';
-                return failedReason;
+                return { failedReason };
             }
 
             await addConfirmationDetailsToQueue({
@@ -297,7 +299,7 @@ class BookingService {
 
                 if(statusCode && message) {
                     failedReason = errorMessage;
-                    return failedReason;
+                    return { failedReason };
                 }
             }
 
@@ -310,7 +312,7 @@ class BookingService {
                 });
 
                 failedReason = 'Booking confirmed but failed to enqueue notification job';
-                return failedReason;
+                return { failedReason };
             }
         }
     }
