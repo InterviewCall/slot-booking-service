@@ -31,5 +31,5 @@ app.listen(serverConfig.PORT, async () => {
     setupAssociations();
     logger.info('All the associations are successfully set');
     await sequelize.authenticate();
-    logger.info('Database connection has been established successfully', { error: 'new error' });
+    logger.info('Database connection has been established successfully');
 });
