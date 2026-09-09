@@ -1,3 +1,5 @@
+import cron from 'node-cron';
+
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
@@ -10,7 +12,7 @@ const reservationService = new ReservationService(
 );
 
 export function releaseSlotCron(): void {
-    setInterval(async () => {
+    cron.schedule('*/10 * * * * *', async () => {
         await reservationService.releaseExpiredSlotReservations();
-    }, 10000);
+    });
 }
