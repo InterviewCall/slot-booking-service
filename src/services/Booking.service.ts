@@ -222,8 +222,10 @@ class BookingService {
             if(!slot.bookingDate || !slot.timeSlot) {
                 throw new NotFoundError('Slot detalils could not found');
             } 
-
-            const candidate: CandidateDetailsResponse = await fetchCandidateDetails(booking.candidateId);
+            const submissionDetails: FormSubmissionDetailsResponse = await fetchFormSubmissionDetails(booking.submissionId);
+            const candidate: CandidateDetailsResponse = await fetchCandidateDetails(
+                submissionDetails.data.candidatePublicId
+            );
 
             const slotDetails: string = `${formatBookingDate(slot.bookingDate.bookingDate)}, ${slot.timeSlot.slotLabel}`;
 
@@ -260,7 +262,10 @@ class BookingService {
         let failedReason: string = '';
 
         try {
-            const candidateResponse: CandidateDetailsResponse = await fetchCandidateDetails(booking.candidateId);
+            const submissionDetails: FormSubmissionDetailsResponse = await fetchFormSubmissionDetails(booking.submissionId);
+            const candidateResponse: CandidateDetailsResponse = await fetchCandidateDetails(
+                submissionDetails.data.candidatePublicId
+            );
 
             const candidate: CandidateData = candidateResponse.data;
 
