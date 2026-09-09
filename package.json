@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/server.ts",
-    "dev": "nodemon --watch src --ext ts --exec 'tsx src/server.ts'",
+    "dev": "nodemon --watch src --ext ts --exec \"tsx src/server.ts\"",
     "migration:generate": "sequelize-cli migration:generate --name",
     "seed:generate": "sequelize-cli seed:generate --name",
     "migrate": "sequelize-cli db:migrate",
