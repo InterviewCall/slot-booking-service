@@ -24,6 +24,7 @@ export type CandidateData = {
 export type Submissiondata = {
     submissionId: string,
     candidateId: number
+    candidatePublicId: string
 }
 
 export type CandidateDetailsResponse = {

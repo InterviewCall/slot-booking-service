@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Transaction } from 'sequelize';
 
-import { fetchCandidateDetails } from '../apis/candidateFormDetailsService.api';
+import { fetchCandidateDetails,fetchFormSubmissionDetails } from '../apis/candidateFormDetailsService.api';
 import logger from '../configs/logger.config';
 import Booking from '../db/models/Booking.model';
 import DateTimeSlot from '../db/models/DateTimeSlot.model';
@@ -91,7 +91,10 @@ class ReservationService {
                 }
             }
 
-            const candidateDetails = await fetchCandidateDetails(booking.candidateId);
+            const submissionDetails = await fetchFormSubmissionDetails(booking.submissionId);
+            const candidateDetails = await fetchCandidateDetails(
+                submissionDetails.data.candidatePublicId
+            );
 
             const slotDetails = `${formatBookingDate(slot.bookingDate.bookingDate)}, ${slot.timeSlot.slotLabel}`;
 

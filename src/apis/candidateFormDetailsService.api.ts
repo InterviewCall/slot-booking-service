@@ -1,7 +1,7 @@
 import { candidateFormDetailsApi } from '../configs/axios.config';
 import { CandidateDetailsResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
 
-export async function fetchCandidateDetails(candidateId: number): Promise<CandidateDetailsResponse> {
+export async function fetchCandidateDetails(candidateId: string): Promise<CandidateDetailsResponse> {
     const response = await candidateFormDetailsApi.get<CandidateDetailsResponse>(`/candidates/${candidateId}`);
     return response.data;
 }
