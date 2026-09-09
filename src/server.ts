@@ -5,9 +5,15 @@ import logger from './configs/logger.config';
 import { frontendConfig, serverConfig } from './configs/server.config';
 import { setupAssociations } from './db/models/associations';
 import sequelize from './db/models/sequelize';
+
+import { releaseSlotCron } from './crons/releaseSlotCron';
+
+
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';
 import { appErrorHandler, genericErrorHandler } from './middlewares/error.middleware';
+
 import apiRouter from './routes';
+
 
 const app = express();
 
@@ -32,4 +38,5 @@ app.listen(serverConfig.PORT, async () => {
     logger.info('All the associations are successfully set');
     await sequelize.authenticate();
     logger.info('Database connection has been established successfully');
+    releaseSlotCron();
 });
