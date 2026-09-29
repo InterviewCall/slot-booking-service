@@ -3,15 +3,11 @@ import express from 'express';
 
 import logger from './configs/logger.config';
 import { frontendConfig, serverConfig } from './configs/server.config';
+import { releaseSlotCron } from './crons/releaseSlotCron';
 import { setupAssociations } from './db/models/associations';
 import sequelize from './db/models/sequelize';
-
-import { releaseSlotCron } from './crons/releaseSlotCron';
-
-
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';
 import { appErrorHandler, genericErrorHandler } from './middlewares/error.middleware';
-
 import apiRouter from './routes';
 
 
