@@ -180,8 +180,8 @@ class BookingService {
                 transaction
             );
 
-            await transaction.commit();
             await markSubmissionAsBooked(booking.submissionId);
+            await transaction.commit();
         } catch (error) {
             await transaction.rollback();
 
