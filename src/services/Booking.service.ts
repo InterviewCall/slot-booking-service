@@ -2,7 +2,7 @@ import { isAxiosError } from 'axios';
 import { Lock, LockAcquisitionError, LockHandle } from 'redlock-universal';
 import { Transaction } from 'sequelize';
 
-import { fetchCandidateDetails, fetchFormSubmissionDetails } from '../apis/candidateFormDetailsService.api';
+import { fetchCandidateDetails, fetchFormSubmissionDetails, markSubmissionAsBooked } from '../apis/candidateFormDetailsService.api';
 import logger from '../configs/logger.config';
 import { createDistributedLock } from '../configs/redis.config';
 import { serverConfig } from '../configs/server.config';
@@ -181,6 +181,7 @@ class BookingService {
             );
 
             await transaction.commit();
+            await markSubmissionAsBooked(booking.submissionId);
         } catch (error) {
             await transaction.rollback();
 

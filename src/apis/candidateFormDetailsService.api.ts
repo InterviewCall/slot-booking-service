@@ -16,3 +16,8 @@ export async function fetchFormSubmissionDetails(
 
     return response.data;
 }
+export async function markSubmissionAsBooked(submissionId: string): Promise<void> {
+    await candidateFormDetailsApi.put(
+        `/submissions/${encodeURIComponent(submissionId)}/book`
+    );
+}
