@@ -26,6 +26,8 @@ import { getReservationExpiredTime } from '../utils/helpers/getReservationExpire
 import { checkIsValidUUID, generateIdempotencyKey } from '../utils/helpers/idempotencyKey.helper';
 import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
 
+import {FormSubmissionStatus} from '../utils/enums/FormSubmissionStatus';
+
 class BookingService {
     private readonly bookingRepositoty: BookingRepository;
     private readonly idempotencyKeyRepository: IdempotencyKeyRepository;
@@ -72,6 +74,10 @@ class BookingService {
             }
 
             const submissionDetails: FormSubmissionDetailsResponse = await fetchFormSubmissionDetails(bookingPayload.submissionId);
+            
+            if(submissionDetails.data.status === FormSubmissionStatus.BOOKED) {
+                throw new BadRequestError('This submission already has a slot booked. Please submit the form again before booking a new slot.');
+            }
 
             const booking: Booking = await this.bookingRepositoty.create({
                 dateTimeSlotId: bookingPayload.dateTimeSlotId,
@@ -190,7 +196,16 @@ class BookingService {
             if(error instanceof NotFoundError || error instanceof BadRequestError) {
                 throw error;
             }
-
+            if(isAxiosError<ApiErrorResponse>(error)) {
+                const statusCode = error.response?.status;
+                const message = error.response?.data.message;
+                if(statusCode && message) {
+                    const axiosError: AppError | null = createErrorExecutor(statusCode, message);
+                    if(axiosError) {
+                        throw axiosError;
+                    }
+                }
+            }
             throw new InternalServerError('Something went wrong while confirming booking');
         }
 
