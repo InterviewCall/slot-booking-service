@@ -190,7 +190,16 @@ class BookingService {
             if(error instanceof NotFoundError || error instanceof BadRequestError) {
                 throw error;
             }
-
+            if(isAxiosError<ApiErrorResponse>(error)) {
+                const statusCode = error.response?.status;
+                const message = error.response?.data.message;
+                if(statusCode && message) {
+                    const axiosError: AppError | null = createErrorExecutor(statusCode, message);
+                    if(axiosError) {
+                        throw axiosError;
+                    }
+                }
+            }
             throw new InternalServerError('Something went wrong while confirming booking');
         }
 
