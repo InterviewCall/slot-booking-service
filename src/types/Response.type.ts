@@ -1,3 +1,4 @@
+import { FormSubmissionStatus } from '../utils/enums/FormSubmissionStatus';
 import { AppError } from '../utils/errors/app.error';
 
 export interface SuccessResponse<T> {
@@ -25,6 +26,7 @@ export type Submissiondata = {
     submissionId: string,
     candidateId: number
     candidatePublicId: string
+    status: FormSubmissionStatus    
 }
 
 export type CandidateDetailsResponse = {
