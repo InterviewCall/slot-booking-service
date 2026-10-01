@@ -17,6 +17,7 @@ import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
 import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, EnqueuedResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
+import {FormSubmissionStatus} from '../utils/enums/FormSubmissionStatus';
 import { NotificationChannel } from '../utils/enums/NotificationChannel.enum';
 import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
 import { AppError, BadRequestError, ConflictError, InternalServerError, NotFoundError } from '../utils/errors/app.error';
@@ -25,8 +26,6 @@ import { formatBookingDate } from '../utils/helpers/formatBookingDate';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID, generateIdempotencyKey } from '../utils/helpers/idempotencyKey.helper';
 import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
-
-import {FormSubmissionStatus} from '../utils/enums/FormSubmissionStatus';
 
 class BookingService {
     private readonly bookingRepositoty: BookingRepository;
