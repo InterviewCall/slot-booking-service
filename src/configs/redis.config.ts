@@ -3,7 +3,7 @@ import { createLock,IoredisAdapter } from 'redlock-universal';
 
 import { InternalServerError } from '../utils/errors/app.error';
 import logger from './logger.config';
-import { serverConfig } from './server.config';
+import { redisAuthOptions, serverConfig } from './server.config';
 
 let connection: Redis | undefined = undefined;
 
@@ -12,7 +12,8 @@ function createRedisConnection(): Redis {
     const redisConfig = {
         port: serverConfig.REDIS_PORT,
         host: serverConfig.REDIS_HOST,
-        maxRetriesPerRequest: 3
+        maxRetriesPerRequest: 3,
+        ...redisAuthOptions
     };
 
     const redis = new Redis(redisConfig);

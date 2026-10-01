@@ -1,8 +1,13 @@
 const path = require('path');
 
+// Local dev runs the TypeScript sources through ts-node.
+// In production (Docker) we run the compiled output: SEQUELIZE_USE_DIST=true
+const useDist = process.env.SEQUELIZE_USE_DIST === 'true';
+const base = useDist ? 'dist' : 'src';
+
 module.exports = {
-    seedersPath: path.resolve('./src/db/seeders'),
-    modelsPath: path.resolve('./src/db/models'),
-    migrationsPath: path.resolve('./src/db/migrations'),
-    config: path.resolve('./src/configs/sequelize.config.js')
-}
+    seedersPath: path.resolve(`./${base}/db/seeders`),
+    modelsPath: path.resolve(`./${base}/db/models`),
+    migrationsPath: path.resolve(`./${base}/db/migrations`),
+    config: path.resolve(useDist ? './src/configs/db.config.js' : './src/configs/sequelize.config.js')
+};

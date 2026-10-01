@@ -3,15 +3,19 @@ import express from 'express';
 
 import logger from './configs/logger.config';
 import { frontendConfig, serverConfig } from './configs/server.config';
+import { extendSlotWindowCron } from './crons/extendSlotWindowCron';
 import { releaseSlotCron } from './crons/releaseSlotCron';
 import { setupAssociations } from './db/models/associations';
 import sequelize from './db/models/sequelize';
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';
 import { appErrorHandler, genericErrorHandler } from './middlewares/error.middleware';
+import { apiRateLimiter, writeRateLimiter } from './middlewares/rateLimit.middleware';
 import apiRouter from './routes';
 
 
 const app = express();
+
+app.set('trust proxy', serverConfig.TRUST_PROXY);
 
 app.use(cors({
     origin: [frontendConfig.ADMIN_FRONTEND_URL, frontendConfig.CANDIDATE_FRONTEND_URL],
@@ -23,7 +27,7 @@ app.use(express.json());
 
 app.use(attachCorrelationIdMiddleware);
 
-app.use('/api', apiRouter);
+app.use('/api', apiRateLimiter, writeRateLimiter, apiRouter);
 
 app.use(appErrorHandler);
 app.use(genericErrorHandler);
@@ -35,4 +39,5 @@ app.listen(serverConfig.PORT, async () => {
     await sequelize.authenticate();
     logger.info('Database connection has been established successfully');
     releaseSlotCron();
+    extendSlotWindowCron();
 });
