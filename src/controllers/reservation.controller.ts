@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-import { ReservationParamsDto } from '../dtos/Resrvation.dto';
+import { ReservationParamsDto } from '../dtos/Reservation.dto';
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';

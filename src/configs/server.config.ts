@@ -1,46 +1,6 @@
 import dotenv from 'dotenv';
 
-type ServerConfig = {
-    PORT: number
-    NODE_ENV?: string
-    REDIS_PORT: number,
-    REDIS_HOST: string,
-    REDIS_PASSWORD?: string,
-    REDIS_TLS: boolean,
-    LOCK_TTL: number
-    CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: string
-    SCHEDULER_INTERNAL_API_KEY: string
-    INTERNAL_API_KEY_HEADER: string
-    TRUST_PROXY: number
-    SLOT_WINDOW_DAYS: number
-}
-
-type RateLimitConfig = {
-    WINDOW_MS: number
-    MAX_REQUESTS: number
-    WRITE_MAX_REQUESTS: number
-}
-
-type QueueConfig = {
-    JOB_ATTEMPTS: number
-    RETRY_BACKOFF_MS: number
-    FAILED_JOB_RETENTION_DAYS: number
-    FAILED_JOB_RETENTION_COUNT: number
-}
-
-type DBConfig = {
-    DB_HOST: string
-    DB_USER: string
-    DB_PASSWORD: string
-    DB_NAME: string
-    DB_SSL: boolean
-    DB_SSL_CA_PATH: string
-}
-
-type FrontendConfig = {
-    ADMIN_FRONTEND_URL: string,
-    CANDIDATE_FRONTEND_URL: string,
-}
+import { DBConfig, FrontendConfig, QueueConfig, RateLimitConfig, ServerConfig } from '../types/Config.type';
 
 dotenv.config();
 
@@ -56,6 +16,9 @@ export const serverConfig: ServerConfig =  {
     CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: process.env.CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL || 'http://localhost:3000/api/v1',
     SCHEDULER_INTERNAL_API_KEY: process.env.SCHEDULER_INTERNAL_API_KEY || '',
     INTERNAL_API_KEY_HEADER: process.env.INTERNAL_API_KEY_HEADER || '',
+    NOTIFICATION_SERVICE_BASE_URL: process.env.NOTIFICATION_SERVICE_BASE_URL || 'http://localhost:3005/api/v1',
+    // How long one service-to-service call may take before the admin page gives up on it
+    INTERNAL_SERVICE_TIMEOUT_MS: Number(process.env.INTERNAL_SERVICE_TIMEOUT_MS) || 3000,
     // Number of reverse proxies (Caddy, ...) sitting in front of the app; needed so req.ip is the real client IP
     TRUST_PROXY: Number(process.env.TRUST_PROXY ?? 1),
     // How many days ahead bookable dates/slots are kept generated (rolling window)

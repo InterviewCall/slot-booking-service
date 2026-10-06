@@ -99,3 +99,15 @@ export class GoneError implements AppError {
         this.name = 'GoneError';
     }
 }
+
+export class BadGatewayError implements AppError {
+    statusCode: number;
+    message: string;
+    name: string;
+
+    constructor(message: string) {
+        this.statusCode = StatusCodes.BAD_GATEWAY;
+        this.message = message;
+        this.name = 'BadGatewayError';
+    }
+}

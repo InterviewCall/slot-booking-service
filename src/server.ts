@@ -4,7 +4,7 @@ import express from 'express';
 import logger from './configs/logger.config';
 import { frontendConfig, serverConfig } from './configs/server.config';
 import { extendSlotWindowCron } from './crons/extendSlotWindowCron';
-import { releaseSlotCron } from './crons/releaseSlotCron';
+import { releaseSlotCron } from './crons/releaseSlot.cron';
 import { setupAssociations } from './db/models/associations';
 import sequelize from './db/models/sequelize';
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';

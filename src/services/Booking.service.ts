@@ -11,18 +11,18 @@ import DateTimeSlot from '../db/models/DateTimeSlot.model';
 import IdempotencyKey from '../db/models/IdempotencyKey.model';
 import sequelize from '../db/models/sequelize';
 import { CreateBookingDto } from '../dtos/Booking.dto';
-import { addConfirmationDetailsToQueue } from '../producers/transactionalNottification.producer';
+import { addConfirmationDetailsToQueue } from '../producers/transactionalNotification.producer';
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
 import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, EnqueuedResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import {FormSubmissionStatus} from '../utils/enums/FormSubmissionStatus';
-import { NotificationChannel } from '../utils/enums/NotificationChannel.enum';
+import { NotificationChannel } from '../utils/enums/NotificationChannel';
 import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
 import { AppError, BadRequestError, ConflictError, InternalServerError, NotFoundError } from '../utils/errors/app.error';
-import { createErrorExecutor } from '../utils/helpers/errorExecutorFactory';
-import { formatBookingDate } from '../utils/helpers/formatBookingDate';
+import { createErrorExecutor } from '../utils/factories/errorExecutorFactory';
+import { formatBookingDate } from '../utils/helpers/formatBookingDate.helper';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID, generateIdempotencyKey } from '../utils/helpers/idempotencyKey.helper';
 import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
@@ -224,7 +224,7 @@ class BookingService {
                 throw new NotFoundError(`No booking found with this id: ${bookingId}`);
             }
 
-            if(booking.status != BookingStatus.CONFIRMED) {
+            if(booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.COMPLETED) {
                 throw new BadRequestError('Booking is not in confirm state, can not find details');
             }
 
