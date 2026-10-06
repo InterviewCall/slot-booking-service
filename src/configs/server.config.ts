@@ -1,34 +1,6 @@
 import dotenv from 'dotenv';
 
-type ServerConfig = {
-    PORT: number
-    NODE_ENV?: string
-    REDIS_PORT: number,
-    REDIS_HOST: string,
-    LOCK_TTL: number
-    CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: string
-    SCHEDULER_INTERNAL_API_KEY: string
-    INTERNAL_API_KEY_HEADER: string
-}
-
-type QueueConfig = {
-    JOB_ATTEMPTS: number
-    RETRY_BACKOFF_MS: number
-    FAILED_JOB_RETENTION_DAYS: number
-    FAILED_JOB_RETENTION_COUNT: number
-}
-
-type DBConfig = {
-    DB_HOST: string
-    DB_USER: string
-    DB_PASSWORD: string
-    DB_NAME: string
-}
-
-type FrontendConfig = {
-    ADMIN_FRONTEND_URL: string,
-    CANDIDATE_FRONTEND_URL: string,
-}
+import { DBConfig, FrontendConfig, QueueConfig, ServerConfig } from '../types/Config.type';
 
 dotenv.config();
 
@@ -40,7 +12,10 @@ export const serverConfig: ServerConfig =  {
     LOCK_TTL: Number(process.env.LOCK_TTL) || 50000,
     CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: process.env.CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL || 'http://localhost:3000/api/v1',
     SCHEDULER_INTERNAL_API_KEY: process.env.SCHEDULER_INTERNAL_API_KEY || '',
-    INTERNAL_API_KEY_HEADER: process.env.INTERNAL_API_KEY_HEADER || ''
+    INTERNAL_API_KEY_HEADER: process.env.INTERNAL_API_KEY_HEADER || '',
+    NOTIFICATION_SERVICE_BASE_URL: process.env.NOTIFICATION_SERVICE_BASE_URL || 'http://localhost:3005/api/v1',
+    // How long one service-to-service call may take before the admin page gives up on it
+    INTERNAL_SERVICE_TIMEOUT_MS: Number(process.env.INTERNAL_SERVICE_TIMEOUT_MS) || 3000
 };
 
 // Job retry / retention policy for the notification queue this service produces into.

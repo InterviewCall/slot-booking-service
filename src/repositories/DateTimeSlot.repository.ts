@@ -45,6 +45,31 @@ class DateTimeSlotRepository extends BaseRepository<DateTimeSlot> {
         return availableSlots;
     }
 
+    /**
+     * Every slot starting inside [start, end), blocked ones included, with whether its hour and its date are switched on.
+     *
+     *   SELECT s.id, s.slot_start_at, s.status, t.is_active, d.is_active
+     *   FROM date_time_slots s
+     *   JOIN booking_time_slots t ON t.id = s.booking_time_slot_id
+     *   JOIN booking_dates d ON d.id = s.booking_date_id
+     *   WHERE s.slot_start_at >= ? AND s.slot_start_at < ? AND s.deleted_at IS NULL
+     *   ORDER BY s.slot_start_at ASC
+     */
+    async findSlotsInRange(start: Date, end: Date): Promise<DateTimeSlot[]> {
+        return await this.model.findAll({
+            where: {
+                slotStartAt: { [Op.gte]: start, [Op.lt]: end },
+                deletedAt: null,
+            },
+            attributes: ['id', 'slotStartAt', 'status'],
+            include: [
+                { model: BookingTimeSlot, as: 'timeSlot', attributes: ['id', 'isActive'], required: true },
+                { model: BookingDate, as: 'bookingDate', attributes: ['id', 'isActive'], required: true },
+            ],
+            order: [['slotStartAt', 'ASC']],
+        });
+    }
+
     async reserveSlot(slot: DateTimeSlot, transaction: Transaction): Promise<void> {
         slot.status = TimeSlotStatus.RESERVED;
         await slot.save({ transaction });
