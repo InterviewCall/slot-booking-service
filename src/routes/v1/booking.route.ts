@@ -6,6 +6,11 @@ import { confirmBookingQuerySchema, createBookingBodySchema, getBookingDetailsSc
 
 const bookingRouter = Router();
 
+bookingRouter.get(
+    '/',
+    bookingController.getAllBookingsHandler
+);
+
 bookingRouter.post(
     '/create-booking',
     validateRequestBody(createBookingBodySchema),

@@ -15,7 +15,7 @@ import { addConfirmationDetailsToQueue } from '../producers/transactionalNottifi
 import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
-import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, EnqueuedResponse, FormSubmissionDetailsResponse } from '../types/Response.type';
+import { ApiErrorResponse, BookingDetailsResponse, CandidateData, CandidateDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, EnqueuedResponse, FormSubmissionDetailsResponse, GetBookingsResponse } from '../types/Response.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import {FormSubmissionStatus} from '../utils/enums/FormSubmissionStatus';
 import { NotificationChannel } from '../utils/enums/NotificationChannel.enum';
@@ -215,7 +215,71 @@ class BookingService {
             enqueuedResponse
         };
     }
+    async getAllBookings(): Promise<GetBookingsResponse> {
+        const bookings = await this.bookingRepositoty.findAllBookings();
 
+        const submissionIds = [
+            ...new Set(
+                bookings.map((booking) => booking.submissionId)
+            )
+        ];
+
+        const submissionDetailsEntries = await Promise.all(
+            submissionIds.map(async (submissionId) => {
+                try {
+                    const response =
+                        await fetchFormSubmissionDetails(submissionId);
+
+                    return [submissionId, response.data] as const;
+                } catch (error) {
+                    logger.error(
+                        'Failed to fetch submission details for booking list',
+                        {
+                            submissionId,
+                            error
+                        }
+                    );
+
+                    return [submissionId, null] as const;
+                }
+            })
+        );
+
+        const submissionDetailsMap = new Map(
+            submissionDetailsEntries
+        );
+
+        return bookings.map((booking) => {
+            const submissionDetails =
+                submissionDetailsMap.get(booking.submissionId);
+
+            return {
+                bookingId: String(booking.id),
+                dateTimeSlotId: Number(booking.dateTimeSlotId),
+                candidateId: booking.candidateId,
+                submissionId: booking.submissionId,
+                bookingStatus: booking.status,
+                slotStartAt:
+                    booking.dateTimeSlot!.slotStartAt.toISOString(),
+                slotStatus: booking.dateTimeSlot!.status,
+
+                candidate:
+                    submissionDetails?.candidate ?? null,
+
+                formName:
+                    submissionDetails?.formName ?? null,
+
+                formSlug:
+                    submissionDetails?.formSlug ?? null,
+
+                leadScore:
+                    submissionDetails?.leadScore ?? null,
+
+                leadTemperature:
+                    submissionDetails?.leadTemperature ?? null
+            };
+        });
+    }
     async getBookingDetails(bookingId: bigint): Promise<BookingDetailsResponse> {
         try {
             const booking: Booking | null = await this.bookingRepositoty.getBooking(bookingId);

@@ -1,6 +1,7 @@
 import { CreationAttributes, Op, Transaction } from 'sequelize';
 
 import Booking from '../db/models/Booking.model';
+import DateTimeSlot from '../db/models/DateTimeSlot.model';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import { NotFoundError } from '../utils/errors/app.error';
 import BaseRepository from './Base.repository';
@@ -55,6 +56,19 @@ class BookingRepository extends BaseRepository<Booking> {
         });
 
         return booking;
+    }
+    async findAllBookings(): Promise<Booking[]> {
+        return await this.model.findAll({
+            attributes: ['id', 'dateTimeSlotId', 'candidateId', 'submissionId', 'status'],
+            include: [
+                {
+                    model: DateTimeSlot,
+                    as: 'dateTimeSlot',
+                    attributes: ['slotStartAt', 'status']
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
     }
 
     async getBooking(bookingId: bigint): Promise<Booking | null> {

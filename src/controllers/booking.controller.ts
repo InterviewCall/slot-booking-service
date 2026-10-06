@@ -6,11 +6,20 @@ import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
 import BookingService from '../services/Booking.service';
-import { BookingDetailsResponse, ConfirmBookingResponse, CreateBookingResponse } from '../types/Response.type';
+import { BookingDetailsResponse, ConfirmBookingResponse, CreateBookingResponse, GetBookingsResponse } from '../types/Response.type';
 import { buildSuccessResponse } from '../utils/helpers/response.helper';
 
 const bookingService = new BookingService(new BookingRepository(), new IdempotencyKeyRepository(), new DateTimeSlotRepository());
-
+async function getAllBookingsHandler(_req: Request, res: Response, next: NextFunction) {
+    try {
+        const response: GetBookingsResponse = await bookingService.getAllBookings();
+        res.status(StatusCodes.OK).json(
+            buildSuccessResponse<GetBookingsResponse>('Bookings fetched successfully', response)
+        );
+    } catch (error) {
+        next(error);
+    }
+}
 async function createBookingHandler(req: Request, res: Response, next: NextFunction) {
     try {
         const bookingPayload = req.body as CreateBookingDto;
@@ -53,5 +62,6 @@ async function getBookingDetailsHandler(req: Request, res: Response, next: NextF
 export default {
     createBookingHandler,
     confirmBookingHandler,
-    getBookingDetailsHandler
+    getBookingDetailsHandler,
+    getAllBookingsHandler
 };
