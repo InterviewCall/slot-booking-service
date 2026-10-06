@@ -23,11 +23,30 @@ export type CandidateData = {
 }
 
 export type Submissiondata = {
-    submissionId: string,
-    candidateId: number
-    candidatePublicId: string
-    status: FormSubmissionStatus    
-}
+    submissionId: string;
+    candidateId: number;
+    candidatePublicId: string;
+    status: FormSubmissionStatus;
+
+    candidate: {
+        fullName: string;
+        email: string;
+        phone: string;
+    };
+
+    formName: string;
+    formSlug: string;
+
+    leadScore: number | null;
+    leadTemperature: string | null;
+
+    source?: string | null;
+    utmCampaign?: string | null;
+    reminderCount?: number;
+
+    createdAt?: string;
+    submittedAt?: string | null;
+};
 
 export type CandidateDetailsResponse = {
     success: boolean,
@@ -84,3 +103,14 @@ export type BookingDetailsResponse = {
     candidatePhone: string
     slotDetails: string
 }
+export type BookingListItemResponse = {
+    bookingId: string;
+    dateTimeSlotId: number;
+    candidateId: number;
+    submissionId: string;
+    bookingStatus: string;
+    slotStartAt: string;
+    slotStatus: string;
+};
+
+export type GetBookingsResponse = BookingListItemResponse[];
