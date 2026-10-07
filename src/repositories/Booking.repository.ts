@@ -64,7 +64,8 @@ class BookingRepository extends BaseRepository<Booking> {
                 {
                     model: DateTimeSlot,
                     as: 'dateTimeSlot',
-                    attributes: ['slotStartAt', 'status']
+                    attributes: ['slotStartAt', 'status'],
+                    required: true
                 }
             ],
             order: [['createdAt', 'DESC']]

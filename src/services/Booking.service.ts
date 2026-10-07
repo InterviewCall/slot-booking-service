@@ -250,33 +250,25 @@ class BookingService {
         );
 
         return bookings.map((booking) => {
-            const submissionDetails =
-                submissionDetailsMap.get(booking.submissionId);
-
+            const submissionDetails = submissionDetailsMap.get(booking.submissionId);
+            if (!booking.dateTimeSlot) {
+                throw new InternalServerError(
+                    'Unable to fetch booking slot details'
+                );
+            }
             return {
                 bookingId: String(booking.id),
                 dateTimeSlotId: Number(booking.dateTimeSlotId),
                 candidateId: booking.candidateId,
                 submissionId: booking.submissionId,
                 bookingStatus: booking.status,
-                slotStartAt:
-                    booking.dateTimeSlot!.slotStartAt.toISOString(),
-                slotStatus: booking.dateTimeSlot!.status,
-
-                candidate:
-                    submissionDetails?.candidate ?? null,
-
-                formName:
-                    submissionDetails?.formName ?? null,
-
-                formSlug:
-                    submissionDetails?.formSlug ?? null,
-
-                leadScore:
-                    submissionDetails?.leadScore ?? null,
-
-                leadTemperature:
-                    submissionDetails?.leadTemperature ?? null
+                slotStartAt:booking.dateTimeSlot.slotStartAt.toISOString(),
+                slotStatus: booking.dateTimeSlot.status,
+                candidate:submissionDetails?.candidate ?? null,
+                formName:submissionDetails?.formName ?? null,
+                formSlug:submissionDetails?.formSlug ?? null,
+                leadScore:submissionDetails?.leadScore ?? null,
+                leadTemperature:submissionDetails?.leadTemperature ?? null
             };
         });
     }

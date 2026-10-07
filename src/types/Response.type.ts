@@ -1,4 +1,6 @@
+import { BookingStatus } from '../utils/enums/BookingStatus';
 import { FormSubmissionStatus } from '../utils/enums/FormSubmissionStatus';
+import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
 import { AppError } from '../utils/errors/app.error';
 
 export interface SuccessResponse<T> {
@@ -108,9 +110,18 @@ export type BookingListItemResponse = {
     dateTimeSlotId: number;
     candidateId: number;
     submissionId: string;
-    bookingStatus: string;
+
+    bookingStatus: BookingStatus;
     slotStartAt: string;
-    slotStatus: string;
+    slotStatus: TimeSlotStatus;
+
+    candidate: CandidateData | null;
+
+    formName: string | null;
+    formSlug: string | null;
+
+    leadScore: number | null;
+    leadTemperature: string | null;
 };
 
 export type GetBookingsResponse = BookingListItemResponse[];
