@@ -9,6 +9,7 @@ import sequelize from './db/models/sequelize';
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';
 import { appErrorHandler, genericErrorHandler } from './middlewares/error.middleware';
 import apiRouter from './routes';
+import crmSync from './services/crmSync.instance';
 
 
 const app = express();
@@ -35,4 +36,5 @@ app.listen(serverConfig.PORT, async () => {
     await sequelize.authenticate();
     logger.info('Database connection has been established successfully');
     releaseSlotCron();
+    crmSync.start();
 });

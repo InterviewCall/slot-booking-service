@@ -1,6 +1,8 @@
 import { CreationAttributes, Op, Transaction } from 'sequelize';
 
 import Booking from '../db/models/Booking.model';
+import BookingDate from '../db/models/BookingDate.model';
+import BookingTimeSlot from '../db/models/BookingTimeSlot.model';
 import DateTimeSlot from '../db/models/DateTimeSlot.model';
 import { BookingCancelSource } from '../utils/enums/BookingCancelSource';
 import { BookingStatus } from '../utils/enums/BookingStatus';
@@ -187,6 +189,28 @@ class BookingRepository extends BaseRepository<Booking> {
         });
 
         return booking;
+    }
+
+    /**
+     * A booking with the slot it holds (start time, date and label), for the message sent to the CRM.
+     * Nothing is filtered on the date or time being active: the booking was made when they were.
+     */
+    async findWithSlot(bookingId: bigint): Promise<Booking | null> {
+        return await this.model.findOne({
+            where: { id: bookingId, deletedAt: null },
+            include: [
+                {
+                    model: DateTimeSlot,
+                    as: 'dateTimeSlot',
+                    required: true,
+                    attributes: ['id', 'slotStartAt'],
+                    include: [
+                        { model: BookingDate, as: 'bookingDate', required: true, attributes: ['bookingDate'] },
+                        { model: BookingTimeSlot, as: 'timeSlot', required: true, attributes: ['slotLabel'] },
+                    ],
+                },
+            ],
+        });
     }
 
     async getBooking(bookingId: bigint): Promise<Booking | null> {

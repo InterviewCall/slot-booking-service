@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 
-import { DBConfig, FrontendConfig, QueueConfig, ServerConfig } from '../types/Config.type';
+import { CrmConfig, DBConfig, FrontendConfig, QueueConfig, ServerConfig } from '../types/Config.type';
 
 dotenv.config();
 
@@ -40,4 +40,17 @@ export const dbConfig: DBConfig = {
 export const frontendConfig: FrontendConfig = {
     ADMIN_FRONTEND_URL: String(process.env.ADMIN_FRONTEND_URL),
     CANDIDATE_FRONTEND_URL: String(process.env.CANDIDATE_FRONTEND_URL)
+};
+
+// The CRM (InterviewCall lead management). A confirmed booking and a completed call are also sent there.
+// Off by default: nothing is queued and nothing is sent until CRM_SYNC_ENABLED=true and both the URL and key are set.
+export const crmConfig: CrmConfig = {
+    ENABLED: process.env.CRM_SYNC_ENABLED == 'true',
+    // e.g. https://crm.example.com/api/v1
+    BASE_URL: (process.env.CRM_BASE_URL || '').replace(/\/+$/, ''),
+    // Made in the CRM: Intake monitor > Source keys > system "VSL slot booking". Shown once there.
+    INTAKE_KEY: process.env.CRM_INTAKE_KEY || '',
+    TIMEOUT_MS: Number(process.env.CRM_TIMEOUT_MS) || 10 * 1000,
+    // How often the queue is checked for events that are due (a new event is sent straight away, this is for retries).
+    POLL_MS: Number(process.env.CRM_POLL_MS) || 15 * 1000
 };

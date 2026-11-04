@@ -29,3 +29,12 @@ export type FrontendConfig = {
     ADMIN_FRONTEND_URL: string,
     CANDIDATE_FRONTEND_URL: string,
 }
+
+
+export type CrmConfig = {
+    ENABLED: boolean
+    BASE_URL: string
+    INTAKE_KEY: string
+    TIMEOUT_MS: number
+    POLL_MS: number
+}
