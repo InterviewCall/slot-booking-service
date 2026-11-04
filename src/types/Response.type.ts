@@ -26,6 +26,8 @@ export type Submissiondata = {
     submissionId: string,
     candidateId: number
     candidatePublicId: string
+    // Which VSL form the person filled (job-switch, ...). Older form-service versions do not send it.
+    formSlug?: string
     status: FormSubmissionStatus    
 }
 

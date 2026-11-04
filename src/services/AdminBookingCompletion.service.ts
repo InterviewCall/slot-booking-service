@@ -8,6 +8,8 @@ import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import { AdminBookingCompletionResponse } from '../types/AdminBooking.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import { AppError, ConflictError, InternalServerError, NotFoundError } from '../utils/errors/app.error';
+import crmSync from './crmSync.instance';
+import { CRM_EVENT_COMPLETED } from './CrmSync.service';
 
 /**
  * The admin marks a counselling call as done (and can take that back).
@@ -48,7 +50,12 @@ class AdminBookingCompletionService {
             // The column keeps whole seconds; store the same value we answer with so a retry returns an identical completedAt.
             const completedAt = new Date(Math.floor(now.getTime() / 1000) * 1000);
 
-            return this.toResponse(await this.bookingRepository.markCompleted(booking, completedAt, transaction));
+            const completed = await this.bookingRepository.markCompleted(booking, completedAt, transaction);
+
+            // Tell the CRM the call took place (queued with the change, sent after it).
+            await crmSync.enqueue(CRM_EVENT_COMPLETED, completed.id, transaction);
+
+            return this.toResponse(completed);
         });
     }
 
@@ -92,6 +99,7 @@ class AdminBookingCompletionService {
         try {
             const result = await work(transaction);
             await transaction.commit();
+            crmSync.kick();
             return result;
         } catch (error) {
             await transaction.rollback();

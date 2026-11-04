@@ -26,6 +26,8 @@ import { formatBookingDate } from '../utils/helpers/formatBookingDate.helper';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID, generateIdempotencyKey } from '../utils/helpers/idempotencyKey.helper';
 import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
+import crmSync from './crmSync.instance';
+import { CRM_EVENT_BOOKED } from './CrmSync.service';
 
 class BookingService {
     private readonly bookingRepositoty: BookingRepository;
@@ -186,7 +188,12 @@ class BookingService {
             );
 
             await markSubmissionAsBooked(booking.submissionId);
+
+            // Tell the CRM the person booked a call (queued with the booking, sent after it).
+            await crmSync.enqueue(CRM_EVENT_BOOKED, booking.id, transaction);
+
             await transaction.commit();
+            crmSync.kick();
         } catch (error) {
             await transaction.rollback();
 

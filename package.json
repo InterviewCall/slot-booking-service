@@ -12,7 +12,8 @@
     "seed": "sequelize-cli db:seed --seed",
     "seed:undo": "sequelize-cli db:seed:undo",
     "seed:undo:all": "sequelize-cli db:seed:undo:all",
-    "rollback": "sequelize-cli db:migrate:undo"
+    "rollback": "sequelize-cli db:migrate:undo",
+    "crm:backfill": "ts-node src/scripts/crmBackfill.ts"
   },
   "keywords": [],
   "author": "",
