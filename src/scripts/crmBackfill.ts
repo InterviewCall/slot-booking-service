@@ -4,8 +4,8 @@
  *   npm run crm:backfill -- --since=2026-10-01        (development)
  *   node dist/scripts/crmBackfill.js --since=2026-10-01   (production image)
  *
- * It only writes rows to crm_outbox; the running service sends them. Safe to run again: every event has a fixed id,
- * so the queue and the CRM both ignore what they already have. Without --since, every confirmed or completed booking is queued.
+ * It only writes rows to crm_outbox; the running service sends them. Safe to run again: every event's id comes from the booking (and, for "done", the time it was marked done),
+ * so the queue ignores what it already has and the CRM ignores what it has already applied. Without --since, every confirmed or completed booking is queued.
  * Run the form service's backfill too: it sends the details and the form answers of the same people.
  */
 import { Op } from 'sequelize';
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
                 status: { [Op.in]: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
                 ...(since ? { confirmedAt: { [Op.gte]: since } } : {})
             },
-            attributes: ['id', 'status'],
+            attributes: ['id', 'status', 'completedAt'],
             order: [['id', 'ASC']],
             limit: PAGE
         });
@@ -54,7 +54,8 @@ async function main(): Promise<void> {
             }
             if (
                 row.status === BookingStatus.COMPLETED &&
-                (await outbox.enqueue(eventIdFor(CRM_EVENT_COMPLETED, row.id), CRM_EVENT_COMPLETED, BigInt(row.id)))
+                row.completedAt &&
+                (await outbox.enqueue(eventIdFor(CRM_EVENT_COMPLETED, row.id, row.completedAt), CRM_EVENT_COMPLETED, BigInt(row.id)))
             ) {
                 completed += 1;
             }

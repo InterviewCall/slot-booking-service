@@ -13,8 +13,9 @@ import { formatBookingDate } from '../utils/helpers/formatBookingDate.helper';
 
 export const CRM_EVENT_BOOKED = 'vsl.slot_booked';
 export const CRM_EVENT_COMPLETED = 'vsl.booking_completed';
+export const CRM_EVENT_REOPENED = 'vsl.booking_reopened';
 
-type CrmEventType = typeof CRM_EVENT_BOOKED | typeof CRM_EVENT_COMPLETED;
+type CrmEventType = typeof CRM_EVENT_BOOKED | typeof CRM_EVENT_COMPLETED | typeof CRM_EVENT_REOPENED;
 
 interface CrmEnvelope {
     eventId: string;
@@ -31,8 +32,20 @@ const BACKOFF_MS = [30 * 1000, 2 * 60 * 1000, 10 * 60 * 1000, 30 * 60 * 1000];
 const LEASE_MS = 2 * 60 * 1000;
 const BATCH = 25;
 
-export const eventIdFor = (type: CrmEventType, bookingId: bigint | string): string =>
-    `${type === CRM_EVENT_BOOKED ? 'vsl-booked' : 'vsl-completed'}-${String(bookingId)}`;
+/**
+ * A booking is booked once, so its id never changes. "Done" and "done taken back" can happen many times to the same
+ * booking (done, undone, done again), so their ids carry the moment of the change: each change is a new event, and
+ * the same change queued twice (a retry, a backfill) is still one. Without the moment, the second "done" would find the
+ * first one's row and never be sent.
+ */
+export const eventIdFor = (type: CrmEventType, bookingId: bigint | string, at: Date = new Date()): string => {
+    const id = String(bookingId);
+    if (type === CRM_EVENT_BOOKED) {
+        return `vsl-booked-${id}`;
+    }
+    const moment = type === CRM_EVENT_COMPLETED ? Math.floor(at.getTime() / 1000) : at.getTime();
+    return `${type === CRM_EVENT_COMPLETED ? 'vsl-completed' : 'vsl-reopened'}-${id}-${moment}`;
+};
 
 /**
  * Sends the last two funnel steps to the CRM: "booked a counselling call" and "the call took place".
@@ -52,14 +65,17 @@ class CrmSyncService {
         private readonly bookings: BookingRepository
     ) {}
 
-    /** Call inside the transaction that changes the booking. Never throws: a problem here must not break the booking. */
-    async enqueue(type: CrmEventType, bookingId: bigint | string, transaction: Transaction): Promise<void> {
+    /**
+     * Call inside the transaction that changes the booking. Never throws: a problem here must not break the booking.
+     * `at` is when the change happened (for "done", the completedAt the admin sees); it makes the event's id.
+     */
+    async enqueue(type: CrmEventType, bookingId: bigint | string, transaction: Transaction, at: Date = new Date()): Promise<void> {
         if (!crmConfig.ENABLED) {
             return;
         }
 
         try {
-            await this.outbox.enqueue(eventIdFor(type, bookingId), type, BigInt(bookingId), transaction);
+            await this.outbox.enqueue(eventIdFor(type, bookingId, at), type, BigInt(bookingId), transaction);
         } catch (error) {
             logger.error('Could not queue the CRM event', { type, bookingId: String(bookingId), error });
         }
@@ -117,7 +133,7 @@ class CrmSyncService {
                     if (!(await this.outbox.claim(row.id, LEASE_MS))) {
                         continue;
                     }
-                    if (await this.deliver(row.id, row.eventId, row.eventType as CrmEventType, BigInt(row.bookingId), row.attempts)) {
+                    if (await this.deliver(row.id, row.eventId, row.eventType as CrmEventType, BigInt(row.bookingId), row.attempts, row.createdAt)) {
                         sent += 1;
                     }
                 }
@@ -133,10 +149,10 @@ class CrmSyncService {
         return sent;
     }
 
-    private async deliver(id: number, eventId: string, type: CrmEventType, bookingId: bigint, attemptsSoFar: number): Promise<boolean> {
+    private async deliver(id: number, eventId: string, type: CrmEventType, bookingId: bigint, attemptsSoFar: number, queuedAt: Date): Promise<boolean> {
         const attempts = attemptsSoFar + 1;
         try {
-            const built = await this.build(eventId, type, bookingId);
+            const built = await this.build(eventId, type, bookingId, queuedAt);
             if ('skip' in built) {
                 await this.outbox.markSkipped(id, attempts, built.skip);
                 return false;
@@ -177,10 +193,26 @@ class CrmSyncService {
         return error instanceof Error ? error.message : String(error);
     }
 
-    private async build(eventId: string, type: CrmEventType, bookingId: bigint): Promise<Built> {
+    private async build(eventId: string, type: CrmEventType, bookingId: bigint, queuedAt: Date): Promise<Built> {
         const booking = await this.bookings.findWithSlot(bookingId);
         if (!booking) {
             return { skip: 'The booking no longer exists' };
+        }
+
+        if (type === CRM_EVENT_REOPENED) {
+            // If the admin marked the call done again before this was sent, "taking it back" is no longer true: skip it.
+            if (booking.status !== BookingStatus.CONFIRMED) {
+                return { skip: `The booking is ${booking.status}, not reopened` };
+            }
+            return {
+                envelope: {
+                    eventId,
+                    type,
+                    occurredAt: queuedAt.toISOString(),
+                    // The CRM ignores this if the call was marked done again after this moment, whatever order the events are handled in.
+                    payload: { bookingId: String(booking.id), submissionId: booking.submissionId, reopenedAt: queuedAt.toISOString() }
+                }
+            };
         }
 
         if (type === CRM_EVENT_COMPLETED) {

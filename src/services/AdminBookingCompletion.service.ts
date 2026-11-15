@@ -9,7 +9,7 @@ import { AdminBookingCompletionResponse } from '../types/AdminBooking.type';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import { AppError, ConflictError, InternalServerError, NotFoundError } from '../utils/errors/app.error';
 import crmSync from './crmSync.instance';
-import { CRM_EVENT_COMPLETED } from './CrmSync.service';
+import { CRM_EVENT_COMPLETED, CRM_EVENT_REOPENED } from './CrmSync.service';
 
 /**
  * The admin marks a counselling call as done (and can take that back).
@@ -53,7 +53,7 @@ class AdminBookingCompletionService {
             const completed = await this.bookingRepository.markCompleted(booking, completedAt, transaction);
 
             // Tell the CRM the call took place (queued with the change, sent after it).
-            await crmSync.enqueue(CRM_EVENT_COMPLETED, completed.id, transaction);
+            await crmSync.enqueue(CRM_EVENT_COMPLETED, completed.id, transaction, completedAt);
 
             return this.toResponse(completed);
         });
@@ -71,7 +71,12 @@ class AdminBookingCompletionService {
                 throw new ConflictError(`Only a booking marked as done can be reopened. This booking is ${booking.status}.`);
             }
 
-            return this.toResponse(await this.bookingRepository.undoCompleted(booking, transaction));
+            const reopened = await this.bookingRepository.undoCompleted(booking, transaction);
+
+            // Tell the CRM the call is not done after all (queued with the change, sent after it).
+            await crmSync.enqueue(CRM_EVENT_REOPENED, reopened.id, transaction);
+
+            return this.toResponse(reopened);
         });
     }
 
