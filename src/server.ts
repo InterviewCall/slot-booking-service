@@ -4,13 +4,14 @@ import express from 'express';
 import logger from './configs/logger.config';
 import { frontendConfig, serverConfig } from './configs/server.config';
 import { extendSlotWindowCron } from './crons/extendSlotWindowCron';
-import { releaseSlotCron } from './crons/releaseSlotCron';
+import { releaseSlotCron } from './crons/releaseSlot.cron';
 import { setupAssociations } from './db/models/associations';
 import sequelize from './db/models/sequelize';
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';
 import { appErrorHandler, genericErrorHandler } from './middlewares/error.middleware';
 import { apiRateLimiter, writeRateLimiter } from './middlewares/rateLimit.middleware';
 import apiRouter from './routes';
+import crmSync from './services/crmSync.instance';
 
 
 const app = express();
@@ -40,4 +41,5 @@ app.listen(serverConfig.PORT, async () => {
     logger.info('Database connection has been established successfully');
     releaseSlotCron();
     extendSlotWindowCron();
+    crmSync.start();
 });

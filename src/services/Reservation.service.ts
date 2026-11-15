@@ -10,6 +10,7 @@ import BookingRepository from '../repositories/Booking.repository';
 import DateTimeSlotRepository from '../repositories/DateTimeSlot.repository';
 import IdempotencyKeyRepository from '../repositories/IdempotencyKey.repository';
 import { ApiErrorResponse, ReservationReviewResponse, UpdateCountResponse } from '../types/Response.type';
+import { BookingCancelSource } from '../utils/enums/BookingCancelSource';
 import { BookingStatus } from '../utils/enums/BookingStatus';
 import { TimeSlotStatus } from '../utils/enums/TimeSlotStatus';
 import {
@@ -19,8 +20,8 @@ import {
     InternalServerError,
     NotFoundError
 } from '../utils/errors/app.error';
-import { createErrorExecutor } from '../utils/helpers/errorExecutorFactory';
-import { formatBookingDate } from '../utils/helpers/formatBookingDate';
+import { createErrorExecutor } from '../utils/factories/errorExecutorFactory';
+import { formatBookingDate } from '../utils/helpers/formatBookingDate.helper';
 import { getReservationExpiredTime } from '../utils/helpers/getReservationExpiredTime.helper';
 import { checkIsValidUUID } from '../utils/helpers/idempotencyKey.helper';
 import { getOneReservationExpireTimeStamp } from '../utils/helpers/reservation.helper';
@@ -78,7 +79,7 @@ class ReservationService {
 
             const isConfirmed =
             reservationDetails.finalized &&
-            booking.status === BookingStatus.CONFIRMED &&
+            (booking.status === BookingStatus.CONFIRMED || booking.status === BookingStatus.COMPLETED) &&
             slot.status === TimeSlotStatus.BOOKED;
 
             if (!isConfirmed) {
@@ -169,6 +170,7 @@ class ReservationService {
 
             await this.bookingRepository.cancelBooking(
                 booking,
+                BookingCancelSource.CANDIDATE,
                 transaction
             );
 
@@ -221,6 +223,7 @@ class ReservationService {
 
             updatedCount.updatedBookingCount = await this.bookingRepository.cancelBookings(
                 bookingIds,
+                BookingCancelSource.SYSTEM_EXPIRY,
                 transaction
             );
 

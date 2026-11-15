@@ -1,8 +1,6 @@
 import { AsyncLocalStorage } from 'async_hooks';
 
-type AsyncLocalStorageType = {
-    correlationId: string
-}
+import { AsyncLocalStorageType } from '../../types/Request.type';
 
 export const asyncLocalStorage = new AsyncLocalStorage<AsyncLocalStorageType>();
 

@@ -1,4 +1,4 @@
-import { NotificationChannel } from '../utils/enums/NotificationChannel.enum';
+import { NotificationChannel } from '../utils/enums/NotificationChannel';
 
 export type BookingNotificationDto = {
     bookingId: bigint

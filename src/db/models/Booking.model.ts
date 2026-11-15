@@ -1,5 +1,6 @@
-import { Association, CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model } from 'sequelize';
+import { Association, CreationOptional, DataTypes, ForeignKey, InferAttributes, InferCreationAttributes, Model, NonAttribute } from 'sequelize';
 
+import { BookingCancelSource } from '../../utils/enums/BookingCancelSource';
 import { BookingStatus } from '../../utils/enums/BookingStatus';
 import DateTimeSlot from './DateTimeSlot.model';
 import IdempotencyKey from './IdempotencyKey.model';
@@ -11,9 +12,15 @@ class Booking extends Model<InferAttributes<Booking>, InferCreationAttributes<Bo
     declare candidateId: number;
     declare submissionId: string;
     declare status: CreationOptional<BookingStatus>;
+    declare confirmedAt: CreationOptional<Date | null>;
+    declare cancelledAt: CreationOptional<Date | null>;
+    declare completedAt: CreationOptional<Date | null>;
+    declare cancelSource: CreationOptional<BookingCancelSource | null>;
     declare createdAt: CreationOptional<Date>;
     declare updatedAt: CreationOptional<Date>;
     declare deletedAt: CreationOptional<Date | null>;
+
+    declare dateTimeSlot?: NonAttribute<DateTimeSlot>;
 
     declare static associations: {
         dateTimeSlot: Association<Booking, DateTimeSlot>;
@@ -53,6 +60,30 @@ Booking.init({
         type: DataTypes.ENUM(...Object.values(BookingStatus)),
         allowNull: false,
         defaultValue: BookingStatus.INITIATED
+    },
+
+    confirmedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+    },
+
+    cancelledAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+    },
+
+    completedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+    },
+
+    cancelSource: {
+        type: DataTypes.ENUM(...Object.values(BookingCancelSource)),
+        allowNull: true,
+        defaultValue: null
     },
 
     createdAt: {

@@ -17,7 +17,9 @@
     "rollback": "sequelize-cli db:migrate:undo",
     "migrate:prod": "SEQUELIZE_USE_DIST=true sequelize-cli db:migrate",
     "rollback:prod": "SEQUELIZE_USE_DIST=true sequelize-cli db:migrate:undo",
-    "seed:slots:prod": "SEQUELIZE_USE_DIST=true sequelize-cli db:seed --seed 20260517114134-create-booking-time-slot-table.seeder.js"
+    "seed:slots:prod": "SEQUELIZE_USE_DIST=true sequelize-cli db:seed --seed 20260517114134-create-booking-time-slot-table.seeder.js",
+    "crm:backfill": "ts-node src/scripts/crmBackfill.ts",
+    "crm:backfill:prod": "node dist/scripts/crmBackfill.js"
   },
   "keywords": [],
   "author": "",

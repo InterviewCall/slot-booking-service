@@ -1,46 +1,6 @@
 import dotenv from 'dotenv';
 
-type ServerConfig = {
-    PORT: number
-    NODE_ENV?: string
-    REDIS_PORT: number,
-    REDIS_HOST: string,
-    REDIS_PASSWORD?: string,
-    REDIS_TLS: boolean,
-    LOCK_TTL: number
-    CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: string
-    SCHEDULER_INTERNAL_API_KEY: string
-    INTERNAL_API_KEY_HEADER: string
-    TRUST_PROXY: number
-    SLOT_WINDOW_DAYS: number
-}
-
-type RateLimitConfig = {
-    WINDOW_MS: number
-    MAX_REQUESTS: number
-    WRITE_MAX_REQUESTS: number
-}
-
-type QueueConfig = {
-    JOB_ATTEMPTS: number
-    RETRY_BACKOFF_MS: number
-    FAILED_JOB_RETENTION_DAYS: number
-    FAILED_JOB_RETENTION_COUNT: number
-}
-
-type DBConfig = {
-    DB_HOST: string
-    DB_USER: string
-    DB_PASSWORD: string
-    DB_NAME: string
-    DB_SSL: boolean
-    DB_SSL_CA_PATH: string
-}
-
-type FrontendConfig = {
-    ADMIN_FRONTEND_URL: string,
-    CANDIDATE_FRONTEND_URL: string,
-}
+import { CrmConfig, DBConfig, FrontendConfig, QueueConfig, RateLimitConfig, ServerConfig } from '../types/Config.type';
 
 dotenv.config();
 
@@ -56,6 +16,9 @@ export const serverConfig: ServerConfig =  {
     CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL: process.env.CANDIDATE_FORM_DETAILS_SERVICE_BASE_URL || 'http://localhost:3000/api/v1',
     SCHEDULER_INTERNAL_API_KEY: process.env.SCHEDULER_INTERNAL_API_KEY || '',
     INTERNAL_API_KEY_HEADER: process.env.INTERNAL_API_KEY_HEADER || '',
+    NOTIFICATION_SERVICE_BASE_URL: process.env.NOTIFICATION_SERVICE_BASE_URL || 'http://localhost:3005/api/v1',
+    // How long one service-to-service call may take before the admin page gives up on it
+    INTERNAL_SERVICE_TIMEOUT_MS: Number(process.env.INTERNAL_SERVICE_TIMEOUT_MS) || 3000,
     // Number of reverse proxies (Caddy, ...) sitting in front of the app; needed so req.ip is the real client IP
     TRUST_PROXY: Number(process.env.TRUST_PROXY ?? 1),
     // How many days ahead bookable dates/slots are kept generated (rolling window)
@@ -101,4 +64,17 @@ export const dbConfig: DBConfig = {
 export const frontendConfig: FrontendConfig = {
     ADMIN_FRONTEND_URL: String(process.env.ADMIN_FRONTEND_URL),
     CANDIDATE_FRONTEND_URL: String(process.env.CANDIDATE_FRONTEND_URL)
+};
+
+// The CRM (InterviewCall lead management). A confirmed booking and a completed call are also sent there.
+// Off by default: nothing is queued and nothing is sent until CRM_SYNC_ENABLED=true and both the URL and key are set.
+export const crmConfig: CrmConfig = {
+    ENABLED: process.env.CRM_SYNC_ENABLED == 'true',
+    // e.g. https://crm.example.com/api/v1
+    BASE_URL: (process.env.CRM_BASE_URL || '').replace(/\/+$/, ''),
+    // Made in the CRM: Intake monitor > Source keys > system "VSL slot booking". Shown once there.
+    INTAKE_KEY: process.env.CRM_INTAKE_KEY || '',
+    TIMEOUT_MS: Number(process.env.CRM_TIMEOUT_MS) || 10 * 1000,
+    // How often the queue is checked for events that are due (a new event is sent straight away, this is for retries).
+    POLL_MS: Number(process.env.CRM_POLL_MS) || 15 * 1000
 };
